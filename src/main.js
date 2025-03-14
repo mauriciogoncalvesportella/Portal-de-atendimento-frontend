@@ -38,6 +38,13 @@ import BluePrintInput from "@/views/component/BluePrintInput.vue";
 
 var VueScrollTo = require("vue-scrollto");
 
+// ADICIONE ESTA SINCRONIZAÇÃO DE TOKENS
+// Sincroniza tokens para compatibilidade
+if (localStorage.getItem("access_token") && !localStorage.getItem("token")) {
+  console.log("[App] Sincronizando tokens para compatibilidade");
+  localStorage.setItem("token", localStorage.getItem("access_token"));
+}
+
 // Configurações do socket - atualize seu plugin existente
 import io from "socket.io-client";
 
@@ -48,7 +55,10 @@ Vue.prototype.$socket = {
   connect() {
     // Recupera o token de autenticação
     const getToken = () => {
-      return localStorage.getItem("token");
+      // Verificar ambos os nomes possíveis do token
+      return (
+        localStorage.getItem("token") || localStorage.getItem("access_token")
+      );
     };
 
     // Configuração do socket
@@ -61,7 +71,7 @@ Vue.prototype.$socket = {
         // Configurações de autenticação
         auth: (cb) => {
           const token = getToken();
-          console.log("[Socket] Enviando token de autenticação", token);
+          console.log("[Socket] Enviando token de autenticação:", !!token);
 
           cb({
             token: token,
@@ -128,9 +138,6 @@ Vue.use(Global);
 Vue.use(Notifier);
 Vue.use(StringUtils);
 
-// Inicialização do socket
-Vue.prototype.$socket.connect();
-
 // Outros plugins
 Vue.use(SocketioIOPlugin);
 Vue.use(Rules);
@@ -162,6 +169,11 @@ Vue.component("VLoadingTable", VclTable);
 
 // Instância principal do Vue
 export default new Vue({
+  created() {
+    // Debug para verificar tokens
+    console.log("Access token:", localStorage.getItem("access_token"));
+    console.log("Socket token:", localStorage.getItem("token"));
+  },
   mounted() {
     window.addEventListener("resize", () => {
       store.dispatch("screenResize", {
