@@ -25,3 +25,6 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 =======
 # Portal-de-atendimento-frontend
 frontend portal de atendimento
+
+
+<!-- SEMPRE EXECUTAR SERV BACK COM // npm run start:dev -->

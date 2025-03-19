@@ -342,7 +342,7 @@ body, html, #app, #dayspan {
 }
 .v-btn--flat,
 .v-text-field--solo .v-input__slot {
-  background-color: #f5f5f5 !important;
+  background-color: red !important;
   margin-bottom: 8px !important;
 }
 </style>
