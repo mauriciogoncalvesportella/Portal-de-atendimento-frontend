@@ -1,7 +1,6 @@
 const CKEditorWebpackPlugin = require("@ckeditor/ckeditor5-dev-webpack-plugin");
 const { styles } = require("@ckeditor/ckeditor5-dev-utils");
 const { resolve } = require("path");
-
 module.exports = {
   lintOnSave: false,
   pwa: {
@@ -11,15 +10,15 @@ module.exports = {
       clientsClaim: true,
     },
   },
-
   devServer: {
     disableHostCheck: true,
   },
-
+  devServer: {
+    https: true,
+    port: 8080,
+  },
   filenameHashing: true,
-
   transpileDependencies: ["vuetify", /ckeditor5-[^/\\]+[/\\]src[/\\].+\.js$/],
-
   configureWebpack: {
     devtool: "source-map", // Garante que os arquivos fonte possam ser mapeados
     resolve: {
@@ -27,7 +26,6 @@ module.exports = {
         path: require.resolve("path-browserify"), // Substituindo o path do Node pelo path-browserify
       },
     },
-
     plugins: [
       new CKEditorWebpackPlugin({
         // additionalLanguages: "all",

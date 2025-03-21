@@ -12,6 +12,35 @@ export default {
     let reconnectionTimer = null;
     let httpPollingInterval = null;
 
+    // ADICIONADO: Controle para ambiente de desenvolvimento
+    const DEVELOPMENT_MODE = true; // Ative para ambiente de desenvolvimento
+    const SHOW_SOCKET_LOGS = false; // Controle de logs
+
+    // ADICIONADO: Variável para controlar tentativas de reconexão em desenvolvimento
+    let lastReconnectTime = 0;
+    const RECONNECT_THROTTLE = 60000; // Limita a uma tentativa a cada 60 segundos em modo dev
+
+    // Função para substituir console.log
+    const socketLog = (message) => {
+      if (SHOW_SOCKET_LOGS) {
+        console.log(message);
+      }
+    };
+
+    // Função para substituir console.error
+    const socketError = (message, error) => {
+      if (SHOW_SOCKET_LOGS) {
+        console.error(message, error);
+      }
+    };
+
+    // Função para substituir console.warn
+    const socketWarn = (message) => {
+      if (SHOW_SOCKET_LOGS) {
+        console.warn(message);
+      }
+    };
+
     // URLs do sistema
     const BACKEND_URL = "http://localhost:3000";
 
@@ -20,19 +49,19 @@ export default {
       filaEspera: {
         ws: "FilaEspera",
         http: "/api/fila-espera/get/online",
-        httpAlt: "/api/fila-espera/all", // Rota alternativa
+        httpAlt: "/api/fila-espera/all",
         commit: "FilaEspera/SET_FILA",
       },
       atendimentos: {
         ws: "AtendimentosOnline",
         http: "/api/atendimento/online",
-        httpAlt: "/api/atendimento/all-online", // Rota alternativa
+        httpAlt: "/api/atendimento/all-online",
         commit: "AtendimentosOnline/SET_ATENDIMENTOS",
       },
       fones: {
         ws: "Fone",
         http: "/api/3cx/fone-list",
-        httpAlt: "/api/fone/list", // Rota alternativa
+        httpAlt: "/api/fone/list",
         commit: "Fone/SET_FONES",
       },
     };
@@ -42,7 +71,10 @@ export default {
       alreadyJoined: false,
       visuallyConnected: false,
       lastSocketInstance: null,
-      wsAvailable: true, // Flag para indicar se WebSocket está disponível
+      wsAvailable: true,
+
+      // ADICIONADO: Flag para controlar se já tentamos e falhamos
+      connectionFailed: false,
 
       getToken() {
         return (
@@ -50,20 +82,30 @@ export default {
         );
       },
 
+      hasValidToken() {
+        const token = this.getToken();
+        if (!token) return false;
+
+        try {
+          const decoded = jwt_decode(token);
+          // Verifica se tem idlogin válido
+          return decoded && decoded.idlogin;
+        } catch (e) {
+          return false;
+        }
+      },
+
       onConnect() {
-        console.log("[Socket] Conexão estabelecida com sucesso!");
+        socketLog("[Socket] Conexão estabelecida com sucesso!");
         this.connected = true;
         this.visuallyConnected = true;
         this.wsAvailable = true;
+        this.connectionFailed = false; // Resetar flag após sucesso
         globalAttempts = 0;
 
-        // Manter UI mostrando conectado
         store.commit("SocketStatus/SET_CONNECTED", true);
-
-        // Limpar timers e fallbacks
         this.clearAllTimers();
 
-        // Registrar usuário no socket
         if (this.socket) {
           try {
             const token = this.getToken();
@@ -74,10 +116,10 @@ export default {
                 id: decoded.cd,
                 token: token,
               });
-              console.log("[Socket] Registro de usuário enviado");
+              socketLog("[Socket] Registro de usuário enviado");
             }
           } catch (e) {
-            console.error("[Socket] Erro ao registrar usuário:", e);
+            socketError("[Socket] Erro ao registrar usuário:", e);
           }
         }
 
@@ -105,17 +147,18 @@ export default {
         usingFallbackMode = false;
       },
 
-      // Implementação real de HTTP polling para ambientes de produção
       setupHttpPolling() {
         if (httpPollingInterval) {
           clearInterval(httpPollingInterval);
         }
 
-        console.log("[Socket] Iniciando polling HTTP para dados críticos");
+        socketLog("[Socket] Iniciando polling HTTP para dados críticos");
         usingFallbackMode = true;
 
-        // Manter UI indicando conexão
         store.commit("SocketStatus/SET_CONNECTED", true);
+
+        // No modo de desenvolvimento, não fazemos polling frequente
+        const pollingInterval = DEVELOPMENT_MODE ? 60000 : 15000; // 60s em dev, 15s em prod
 
         httpPollingInterval = setInterval(() => {
           const token = this.getToken();
@@ -125,34 +168,47 @@ export default {
             headers: { Authorization: `Bearer ${token}` },
           };
 
-          // Buscar dados usando as rotas mapeadas
           this.fetchDataWithFallback(API_ROUTES.filaEspera, config);
           this.fetchDataWithFallback(API_ROUTES.atendimentos, config);
           this.fetchDataWithFallback(API_ROUTES.fones, config);
 
-          // Também tentar reconectar WebSocket periodicamente
+          // Em modo de desenvolvimento, tentamos reconectar com muito menos frequência
           if (!this.socket || !this.socket.connected) {
-            if (!reconnectionTimer && this.wsAvailable) {
-              console.log(
-                "[Socket] Tentando reconectar WebSocket em segundo plano"
-              );
-              this.connect().catch(() => {
-                console.warn("[Socket] Falha na reconexão WebSocket");
-              });
+            const now = Date.now();
+            if (
+              !DEVELOPMENT_MODE ||
+              (now - lastReconnectTime > RECONNECT_THROTTLE &&
+                this.wsAvailable &&
+                this.hasValidToken())
+            ) {
+              lastReconnectTime = now;
+              if (!reconnectionTimer && this.wsAvailable) {
+                socketLog(
+                  "[Socket] Tentando reconectar WebSocket em segundo plano"
+                );
+
+                this.connect().catch(() => {
+                  socketWarn("[Socket] Falha na reconexão WebSocket");
+                  // Em modo de desenvolvimento, desistimos após a primeira falha
+                  if (DEVELOPMENT_MODE) {
+                    this.wsAvailable = false;
+                    this.connectionFailed = true;
+                  }
+                });
+              }
             }
           }
-        }, 15000); // A cada 15 segundos
+        }, pollingInterval);
       },
 
-      // Função auxiliar para buscar dados com fallback
       fetchDataWithFallback(routeConfig, config) {
-        // Tentar rota principal
+        // Se estamos em modo de desenvolvimento e já falhamos, não ficamos tentando
+        if (DEVELOPMENT_MODE && this.connectionFailed) return;
+
         axios
           .get(`${BACKEND_URL}${routeConfig.http}`, config)
           .then((response) => {
-            console.log(
-              `[HTTP] Dados obtidos com sucesso: ${routeConfig.http}`
-            );
+            socketLog(`[HTTP] Dados obtidos com sucesso: ${routeConfig.http}`);
             if (
               routeConfig.commit &&
               store.state[routeConfig.commit.split("/")[0]]
@@ -161,12 +217,11 @@ export default {
             }
           })
           .catch((e) => {
-            // Se falhar, tentar rota alternativa
             if (routeConfig.httpAlt) {
               axios
                 .get(`${BACKEND_URL}${routeConfig.httpAlt}`, config)
                 .then((response) => {
-                  console.log(
+                  socketLog(
                     `[HTTP] Dados obtidos via rota alternativa: ${routeConfig.httpAlt}`
                   );
                   if (
@@ -177,12 +232,16 @@ export default {
                   }
                 })
                 .catch((err) => {
-                  console.error(
+                  socketError(
                     `[HTTP] Todos os endpoints falharam para ${routeConfig.ws}`,
                     err
                   );
-                  // Se todas as tentativas falharem, marcar WebSocket como indisponível
                   this.wsAvailable = false;
+
+                  // Em modo dev, marcamos falha para reduzir tentativas futuras
+                  if (DEVELOPMENT_MODE) {
+                    this.connectionFailed = true;
+                  }
                 });
             }
           });
@@ -190,35 +249,75 @@ export default {
 
       joinRooms() {
         if (!this.socket || !this.socket.connected) {
-          console.warn(
+          socketWarn(
             "[Socket] Não foi possível entrar nas salas: socket não conectado"
           );
           return;
         }
 
-        // Usar eventos socket.io diretamente
         Object.values(API_ROUTES).forEach((route) => {
           this.socket.emit("JoinRoom", route.ws);
-          console.log(`[Socket] Entrou na sala: ${route.ws}`);
+          socketLog(`[Socket] Entrou na sala: ${route.ws}`);
         });
       },
 
       onError(err) {
-        console.error("[Socket] Erro de conexão:", err);
+        socketError("[Socket] Erro de conexão:", err);
 
         if (!this.visuallyConnected) {
           store.commit("SocketStatus/SET_CONNECTED", false);
+        }
+
+        // Em modo de desenvolvimento, marcamos como falhou para evitar tentativas futuras
+        if (DEVELOPMENT_MODE) {
+          this.connectionFailed = true;
+          this.wsAvailable = false;
         }
 
         this.setupHttpPolling();
       },
 
       onDisconnect(reason) {
-        console.log(`[Socket] Desconectado. Razão: ${reason}`);
+        socketLog(`[Socket] Desconectado. Razão: ${reason}`);
 
         globalAttempts++;
 
-        // Se desconectou por razões específicas que indicam problemas no servidor
+        // Se estamos em modo de desenvolvimento, limitamos muito as reconexões
+        if (DEVELOPMENT_MODE) {
+          // Se for desconexão do servidor ou erro, desistimos na primeira tentativa
+          if (
+            [
+              "io server disconnect",
+              "transport close",
+              "transport error",
+            ].includes(reason)
+          ) {
+            socketLog(
+              "[Socket] Modo desenvolvimento: Parando tentativas de reconexão"
+            );
+            this.wsAvailable = false;
+            this.connectionFailed = true;
+            this.setupHttpPolling();
+            return;
+          }
+
+          // Para outros tipos de desconexão, tentamos no máximo uma vez por minuto
+          const now = Date.now();
+          if (now - lastReconnectTime <= RECONNECT_THROTTLE) {
+            return; // Ignorar se tentamos recentemente
+          }
+
+          lastReconnectTime = now;
+          setTimeout(() => {
+            if (this.socket && !this.connectionFailed) {
+              this.socket.connect();
+            }
+          }, 5000); // Uma tentativa após 5 segundos
+
+          return;
+        }
+
+        // Código normal de produção abaixo
         if (
           [
             "io server disconnect",
@@ -227,25 +326,22 @@ export default {
           ].includes(reason)
         ) {
           if (globalAttempts <= MAX_ATTEMPTS) {
-            // Referência para tentativas futuras
             this.lastSocketInstance = this.socket;
 
-            // Após MAX_ATTEMPTS, focar no HTTP polling
             if (globalAttempts >= MAX_ATTEMPTS) {
-              console.log(
+              socketLog(
                 "[Socket] Máximo de tentativas atingido, usando apenas HTTP polling"
               );
-              this.wsAvailable = false; // Marcar WebSocket como indisponível
+              this.wsAvailable = false;
               this.setupHttpPolling();
               return;
             }
 
-            // Backoff exponencial
             const backoffTime = Math.min(
               2000 * Math.pow(1.5, globalAttempts - 1),
               30000
             );
-            console.log(
+            socketLog(
               `[Socket] Tentativa ${globalAttempts}/${MAX_ATTEMPTS} - Próxima em ${backoffTime}ms`
             );
 
@@ -263,7 +359,6 @@ export default {
             this.setupHttpPolling();
           }
         } else {
-          // Para outros tipos de desconexão, tentar reconectar rapidamente
           setTimeout(() => {
             if (this.socket) {
               this.socket.connect();
@@ -287,24 +382,21 @@ export default {
         this.socket.on("connect", this.onConnect.bind(this));
         this.socket.on("disconnect", this.onDisconnect.bind(this));
 
-        // Adicionar listeners para atualizações do servidor
         Object.values(API_ROUTES).forEach((route) => {
           const eventName = `${route.ws}/update`;
           this.socket.on(eventName, (data) => {
-            console.log(`[Socket] Recebeu atualização de ${route.ws}`);
+            socketLog(`[Socket] Recebeu atualização de ${route.ws}`);
             if (route.commit && store.state[route.commit.split("/")[0]]) {
               store.commit(route.commit, data);
             }
           });
         });
 
-        // Ping-pong para verificar conexão
         this.socket.on("pong", () => {
-          console.log("[Socket] Pong recebido - conexão ativa");
+          socketLog("[Socket] Pong recebido - conexão ativa");
         });
       },
 
-      // Envia ping para verificar se o socket está realmente conectado
       pingSocket() {
         if (this.socket && this.socket.connected) {
           this.socket.emit("ping");
@@ -312,28 +404,41 @@ export default {
       },
 
       async connect() {
+        // Em modo de desenvolvimento, se já tentamos e falhamos, não tentamos novamente
+        if (DEVELOPMENT_MODE && this.connectionFailed) {
+          return Promise.reject(new Error("Tentativa anterior falhou"));
+        }
+
+        // Verifica se temos um token válido com idlogin
+        if (!this.hasValidToken()) {
+          socketError("[Socket] Token inválido ou sem ID de login");
+          return Promise.reject(new Error("Token inválido"));
+        }
+
         if (!this.socket) {
-          console.log("[Socket] Iniciando Conexão");
+          socketLog("[Socket] Iniciando Conexão");
 
           const token = this.getToken();
           if (!token) {
-            console.error("[Socket] Nenhum token disponível");
+            socketError("[Socket] Nenhum token disponível");
             return Promise.reject(new Error("Sem token"));
           }
 
           try {
             const decoded = jwt_decode(token);
-            console.log("[Auth] Token decodificado:", decoded);
+            socketLog("[Auth] Token decodificado:", decoded);
           } catch (e) {
-            console.error("[Auth] Erro ao decodificar token:", e);
+            socketError("[Auth] Erro ao decodificar token:", e);
           }
 
-          // Configuração completa com todas as opções
+          // Reduzir tempo de timeout em modo dev
+          const timeoutValue = DEVELOPMENT_MODE ? 5000 : 10000;
+
           this.socket = io(BACKEND_URL, {
             path: "/api/socketio",
             transports: ["websocket", "polling"],
-            reconnection: false, // Controlamos manualmente a reconexão
-            timeout: 10000,
+            reconnection: false,
+            timeout: timeoutValue,
             query: {
               token: token,
               userId: jwt_decode(token).idlogin,
@@ -352,11 +457,18 @@ export default {
           return new Promise((resolve, reject) => {
             const timeoutId = setTimeout(() => {
               if (!this.socket.connected) {
-                console.log("[Socket] Timeout - alternando para HTTP polling");
+                socketLog("[Socket] Timeout - alternando para HTTP polling");
+
+                // Em modo dev, marcamos como falha permanente
+                if (DEVELOPMENT_MODE) {
+                  this.connectionFailed = true;
+                  this.wsAvailable = false;
+                }
+
                 this.setupHttpPolling();
                 reject(new Error("Timeout de conexão"));
               }
-            }, 10000);
+            }, timeoutValue);
 
             this.socket.once("connect", () => {
               clearTimeout(timeoutId);
@@ -364,7 +476,7 @@ export default {
             });
           });
         } else if (!this.socket.connected) {
-          console.log("[Socket] Reconectando socket existente...");
+          socketLog("[Socket] Reconectando socket existente...");
           this.socket.connect();
           return Promise.resolve();
         } else {
@@ -373,26 +485,32 @@ export default {
       },
     };
 
-    // Método para inicializar socket após login
     Vue.prototype.$initSocketConnection = function () {
-      globalAttempts = 0;
-      console.log("[Auth] Inicializando conexão de socket após login");
-      Vue.prototype.$socketio.clearAllTimers();
-      Vue.prototype.$socketio.wsAvailable = true; // Reset flag ao logar
+      // Em modo dev, verificamos se já falhamos antes
+      if (DEVELOPMENT_MODE && Vue.prototype.$socketio.connectionFailed) {
+        socketLog(
+          "[Socket] Modo desenvolvimento: Conexão já falhou anteriormente, usando apenas HTTP"
+        );
+        return;
+      }
 
-      const token = Vue.prototype.$socketio.getToken();
-      if (!token) {
-        console.error("[Socket] Sem token para conexão");
+      globalAttempts = 0;
+      socketLog("[Auth] Inicializando conexão de socket após login");
+      Vue.prototype.$socketio.clearAllTimers();
+      Vue.prototype.$socketio.wsAvailable = true;
+
+      // Verificar se o token tem um ID de login válido
+      if (!Vue.prototype.$socketio.hasValidToken()) {
+        socketError("[Socket] Token sem ID de login válido");
         return;
       }
 
       Vue.prototype.$socketio.connect().catch((err) => {
-        console.error("[Socket] Falha na conexão inicial:", err);
+        socketError("[Socket] Falha na conexão inicial:", err);
         Vue.prototype.$socketio.setupHttpPolling();
       });
     };
 
-    // Iniciar imediatamente se o token já existir
     Vue.nextTick(() => {
       if (Vue.prototype.$socketio.getToken()) {
         Vue.prototype.$initSocketConnection();

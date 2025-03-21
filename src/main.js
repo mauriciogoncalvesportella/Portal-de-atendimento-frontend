@@ -6,6 +6,15 @@ import App from "./App.vue";
 import router from "./router/";
 import store from "./store/index.js";
 
+// Importar setupLogger
+import { setupLogger } from "./utils/logger";
+
+// Configurar logger antes de outros plugins
+setupLogger({
+  level: process.env.NODE_ENV === "production" ? 2 : 0, // WARN em produção, DEBUG em dev
+  disableInProduction: false, // Manter logs mesmo em produção, mas em nível WARN
+});
+
 // Importações existentes
 import "./plugins/base";
 import "./plugins/chartist";

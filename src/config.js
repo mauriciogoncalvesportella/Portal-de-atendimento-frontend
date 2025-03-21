@@ -1,3 +1,4 @@
-const BACKEND_URL = "http://localhost:3000";
+const protocol = process.env.VUE_APP_API_PROTOCOL || "https";
+const BACKEND_URL = `${protocol}://localhost:3000`;
 
 export { BACKEND_URL };
