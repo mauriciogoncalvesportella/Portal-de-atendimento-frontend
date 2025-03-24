@@ -1,7 +1,37 @@
 const CKEditorWebpackPlugin = require("@ckeditor/ckeditor5-dev-webpack-plugin");
 const { styles } = require("@ckeditor/ckeditor5-dev-utils");
 const { resolve } = require("path");
+
 module.exports = {
+  devServer: {
+    allowedHosts: ["localhost", "127.0.0.1", ".localhost", "all"],
+    host: "0.0.0.0",
+    port: 8080,
+    https: true,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+      "Access-Control-Allow-Headers":
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization, version-control",
+    },
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        secure: false,
+        pathRewrite: { "^/api": "/api" },
+        onProxyRes: (proxyRes, req, res) => {
+          proxyRes.headers["Access-Control-Allow-Origin"] = "*";
+        },
+      },
+      "/api/socketio": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+    },
+  },
   lintOnSave: false,
   pwa: {
     themeColor: "#1976D2",
@@ -10,28 +40,21 @@ module.exports = {
       clientsClaim: true,
     },
   },
-  devServer: {
-    disableHostCheck: true,
-  },
-  devServer: {
-    https: true,
-    port: 8080,
-  },
   filenameHashing: true,
   transpileDependencies: ["vuetify", /ckeditor5-[^/\\]+[/\\]src[/\\].+\.js$/],
   configureWebpack: {
-    devtool: "source-map", // Garante que os arquivos fonte possam ser mapeados
+    devtool: "source-map",
     resolve: {
       alias: {
-        path: require.resolve("path-browserify"), // Substituindo o path do Node pelo path-browserify
+        path: require.resolve("path-browserify"),
       },
     },
     plugins: [
       new CKEditorWebpackPlugin({
-        // additionalLanguages: "all",
-        language: "en",
-        buildAllTranslationsToSeparateFiles: true, // Adiciona traduções a arquivos separados
-        addMainLanguageTranslationsToAllAssets: true, // Adiciona as traduções do idioma principal a todos os arquivos
+        language: "pt",
+        additionalLanguages: ["en"],
+        buildAllTranslationsToSeparateFiles: true,
+        addMainLanguageTranslationsToAllAssets: true,
       }),
     ],
     output: {
@@ -42,7 +65,6 @@ module.exports = {
     loaderOptions: {
       sass: {
         sassOptions: {
-          // Desativa os avisos de depreciação
           quietDeps: true,
         },
       },
@@ -51,17 +73,15 @@ module.exports = {
   chainWebpack: (config) => {
     const svgRule = config.module.rule("svg");
     svgRule.uses.clear();
-    // const svgRule = config.module.rule('svg')
-    // svgRule.exclude.add(path.join(__dirname, 'node_modules', '@ckeditor'))
-    // svgRule.exclude.add(path.join(__dirname, '..', 'node_modules', '@ckeditor'))
     svgRule.use("raw-loader").loader("raw-loader");
-    /*
+
+    // Configuração adicional para CKEditor
     config.module
-      .rule('cke-svg')
+      .rule("cke-svg")
       .test(/ckeditor5-[^/\\]+[/\\]theme[/\\]icons[/\\][^/\\]+\.svg$/)
-      .use('raw-loader')
-      .loader('raw-loader')
-    */
+      .use("raw-loader")
+      .loader("raw-loader");
+
     config.module
       .rule("cke-css")
       .test(/ckeditor5-[^/\\]+[/\\].+\.css$/)

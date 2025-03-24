@@ -1,11 +1,18 @@
 <template>
-  <router-view />
+  <v-app>
+    <router-view />
+    <GlobalErrorHandler />
+  </v-app>
 </template>
 
 <script>
+import GlobalErrorHandler from "@/components/base/GlobalErrorHandler.vue";
+
 export default {
   name: "App",
-
+  components: {
+    GlobalErrorHandler,
+  },
   mounted() {
     // Monitor de status do socket
     let lastStatus = false;

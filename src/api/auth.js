@@ -1,35 +1,33 @@
 import axios from "axios";
 import store from "@/store/index.js";
-import Vue from "vue"; // Importante: adicionar esta importação
+import Vue from "vue";
 
-// Função de login modificada para usar a URL correta
+// Criar uma instância axios configurada
+const api = axios.create({
+  baseURL: "", // URL base vazia para usar URLs relativas
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Função de login usando a instância axios configurada
 const login = async (username, password) => {
   console.log("Tentando login com:", username);
-  console.log("Tentando login com:", password);
   try {
-    const response = await axios.post(
-      "http://localhost:3000/api/auth/login", // URL CORRETA do backend
-      { username, password },
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await api.post("/api/auth/login", { username, password });
+
     const res = response.data;
-    console.log(response.data);
+    console.log("Resposta do login:", res);
+
     if (res?.token) {
-      // Importante: Observe que o token está sendo salvo como "access_token"
+      // Salvar tokens
       localStorage.setItem("access_token", res.token);
-
-      // Também salvar como "token" para compatibilidade com o socket
       localStorage.setItem("token", res.token);
-
       // Salvar no store
       store.commit("SET_TOKEN", res.token);
 
-      // ADIÇÃO: Inicializar o socket após login bem-sucedido
+      // Inicializar o socket após login bem-sucedido
       if (Vue.prototype.$initSocketConnection) {
         console.log("[Auth] Inicializando conexão de socket após login");
         Vue.prototype.$initSocketConnection();
@@ -37,16 +35,21 @@ const login = async (username, password) => {
         console.warn("[Auth] Método $initSocketConnection não disponível");
       }
     } else {
-      throw new Error("Login inválido");
+      throw new Error("Login inválido - Token não recebido");
     }
     return res;
   } catch (error) {
+    // Log detalhado do erro para debug
     console.error("Erro de login:", error);
-    throw new Error("Login inválido");
+    console.error(
+      "Detalhes do erro:",
+      error.response?.data || "Sem detalhes adicionais"
+    );
+    throw error;
   }
 };
 
-// Mantenha a função de logout, mas atualize a URL
+// Função de logout atualizada
 const logout = async () => {
   try {
     // Limpar tokens antes da requisição para evitar erros de token inválido
@@ -55,15 +58,12 @@ const logout = async () => {
     store.commit("SET_TOKEN", null);
 
     // Executar logout no servidor
-    await axios.get("http://localhost:3000/api/auth/logout", {
-      withCredentials: true,
-    });
+    await api.get("/api/auth/logout");
 
     // Desconectar socket se disponível
     if (Vue.prototype.$socketio && Vue.prototype.$socketio.clientDisconnect) {
       Vue.prototype.$socketio.clientDisconnect();
     }
-
     console.log("[Auth] Logout realizado com sucesso");
   } catch (error) {
     console.error("Erro ao fazer logout:", error);

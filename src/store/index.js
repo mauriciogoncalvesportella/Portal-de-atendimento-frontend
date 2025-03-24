@@ -11,6 +11,7 @@ import SocketStatusStore from "./socket-status";
 import FoneStore from "./fone";
 import vue from "@/main";
 import atividades from "./atividades.js";
+import ErrorModule from "./error.js";
 
 Vue.use(Vuex);
 
@@ -92,6 +93,8 @@ export default new Vuex.Store({
     Tema: TemaStore,
     AtendimentosOnline: AtendimentosOnlineStore,
     SocketStatus: SocketStatusStore,
+    Error: ErrorModule,
+    Agenda: AgendaStore,
   },
   state: initState(),
   mutations: {
@@ -537,50 +540,38 @@ export default new Vuex.Store({
       await API.User.setTable({ id: nmtable, data });
     },
 
-    async allChaves({ commit, state }, args = { force: false, mutex: false }) {
-      const { force, mutex } = args;
-      if (!state.mutexes.chaves || !mutex) {
-        if (mutex) {
-          commit("SET_MUTEX_ACTION", { action: "chaves", value: true });
-        }
-        let data = state.cache.chaves;
-        if (!data || force) {
-          data = await API.Chave.all();
-        }
-
-        commit("SET_CHAVES", data);
-        if (mutex) {
-          commit("SET_MUTEX_ACTION", { action: "chaves", value: false });
-        }
-        return data;
-      }
-      return null;
-    },
-
-    /*
-    async chaveMap ({ dispatch, commit, state }, { force = false, mutex = false }) {
-      if (!state.mutexes.chaveMap || !mutex) {
-        if (mutex) {
-          commit('SET_MUTEX_ACTION', { action: 'chaveMap', value: true })
-        }
-        let chaveMap = {}
-        if (force || !state.cache.chaves) {
-          const data = await dispatch('allChaves', true)
-          for (const chave of data) {
-            chaveMap[chave.cd] = chave
+    async allChaves(
+      { commit, dispatch },
+      args = { force: false, mutex: false }
+    ) {
+      try {
+        const { force, mutex } = args;
+        if (!state.mutexes.chaves || !mutex) {
+          if (mutex) {
+            commit("SET_MUTEX_ACTION", { action: "chaves", value: true });
           }
-        } else {
-          chaveMap = state.cache.chaveMap
+          let data = state.cache.chaves;
+          if (!data || force) {
+            data = await API.Chave.all();
+          }
+
+          commit("SET_CHAVES", data);
+          if (mutex) {
+            commit("SET_MUTEX_ACTION", { action: "chaves", value: false });
+          }
+          return data;
         }
-        if (mutex) {
-          commit('SET_MUTEX_ACTION', { action: 'chaveMap', value: false })
-        }
-        commit('SET_CHAVEMAP', chaveMap)
-        return chaveMap
+        return null;
+      } catch (error) {
+        // Dispatch para o módulo de erro
+        dispatch("error/handleError", {
+          message: "Erro ao buscar chaves",
+          type: "error",
+          details: error,
+        });
+        throw error; // Re-lança o erro para tratamento no componente
       }
-      return null
     },
-    */
 
     async doneAtendimento({ dispatch }, item) {
       await API.Atendimento.done(item);
