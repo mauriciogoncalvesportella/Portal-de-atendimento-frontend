@@ -1,37 +1,52 @@
 <template>
-  <v-snackbar v-model="showError" :color="errorType" top right>
+  <v-snackbar
+    v-model="showError"
+    :color="errorType"
+    :timeout="5000"
+    top
+    right
+  >
     {{ errorMessage }}
     <template v-slot:action="{ attrs }">
-      <v-btn text v-bind="attrs" @click="clearError"> Fechar </v-btn>
+      <v-btn
+        text
+        v-bind="attrs"
+        @click="closeError"
+      >
+        Fechar
+      </v-btn>
     </template>
   </v-snackbar>
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 export default {
-  name: "GlobalErrorHandler",
+  name: 'GlobalErrorHandler',
+  data() {
+    return {
+      showError: false,
+    };
+  },
   computed: {
-    showError: {
-      get() {
-        return this.$store.getters["error/hasError"];
-      },
-      set(value) {
-        if (!value) {
-          this.clearError();
-        }
-      },
-    },
-    errorMessage() {
-      return this.$store.state.error.message;
-    },
-    errorType() {
-      return this.$store.state.error.type || "error";
-    },
+    ...mapState({
+      errorMessage: state => state.Error.message,
+      errorType: state => state.Error.type || 'error'
+    })
+  },
+  watch: {
+    errorMessage(newVal) {
+      if (newVal) {
+        this.showError = true;
+      }
+    }
   },
   methods: {
-    clearError() {
-      this.$store.dispatch("error/clearError");
-    },
-  },
+    closeError() {
+      this.showError = false;
+      this.$store.dispatch('Error/clearError');
+    }
+  }
 };
 </script>

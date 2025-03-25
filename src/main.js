@@ -47,12 +47,19 @@ import BluePrintInput from "@/views/component/BluePrintInput.vue";
 
 var VueScrollTo = require("vue-scrollto");
 
-// ADICIONE ESTA SINCRONIZAÇÃO DE TOKENS
 // Sincroniza tokens para compatibilidade
 if (localStorage.getItem("access_token") && !localStorage.getItem("token")) {
   console.log("[App] Sincronizando tokens para compatibilidade");
   localStorage.setItem("token", localStorage.getItem("access_token"));
+} else if (localStorage.getItem("token") && !localStorage.getItem("access_token")) {
+  console.log("[App] Sincronizando tokens para compatibilidade (inverso)");
+  localStorage.setItem("access_token", localStorage.getItem("token"));
 }
+
+// Função helper para obter token
+const getAccessToken = () => {
+  return localStorage.getItem("access_token") || localStorage.getItem("token") || null;
+};
 
 // Configurações do socket - atualize seu plugin existente
 import io from "socket.io-client";
@@ -63,12 +70,10 @@ Vue.prototype.$socket = {
 
   connect() {
     // Recupera o token de autenticação
-    const getToken = () => {
-      // Verificar ambos os nomes possíveis do token
-      return (
-        localStorage.getItem("token") || localStorage.getItem("access_token")
-      );
-    };
+    const token = getAccessToken();
+    
+    // Log para depuração
+    console.log("[Socket] Configurando conexão com token:", !!token);
 
     // Configuração do socket
     this.instance = io(
@@ -79,9 +84,7 @@ Vue.prototype.$socket = {
 
         // Configurações de autenticação
         auth: (cb) => {
-          const token = getToken();
           console.log("[Socket] Enviando token de autenticação:", !!token);
-
           cb({
             token: token,
             // Opcional: passar informações adicionais
@@ -91,7 +94,7 @@ Vue.prototype.$socket = {
 
         // Cabeçalhos extras
         extraHeaders: {
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -127,6 +130,9 @@ Vue.prototype.$socket = {
     return this.connect();
   },
 };
+
+// Configurar manualmente a instância do socket para o plugin SocketioIOPlugin
+Vue.prototype.$socketio = Vue.prototype.$socket;
 
 // Configurações do Vue
 Vue.config.productionTip = false;
@@ -170,6 +176,28 @@ Vue.use(VueScrollTo, {
   y: true,
 });
 
+// Adicionar manipulador de cache com tratamento de erros
+Vue.prototype.$cache = {
+  get(key) {
+    try {
+      return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : null;
+    } catch (error) {
+      console.error('Sem cache para:', key);
+      return null;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Erro ao salvar cache:', error);
+    }
+  },
+  remove(key) {
+    localStorage.removeItem(key);
+  }
+};
+
 // Registros de componentes
 Vue.component("BluePrintInput", BluePrintInput);
 Vue.component("VueApexCharts", VueApexCharts);
@@ -180,14 +208,20 @@ Vue.component("VLoadingTable", VclTable);
 export default new Vue({
   created() {
     // Debug para verificar tokens
-    console.log("Access token:", localStorage.getItem("access_token"));
-    console.log("Socket token:", localStorage.getItem("token"));
+    const accessToken = getAccessToken();
+    console.log("Access token:", accessToken ? "presente" : "null");
+    console.log("Socket token:", accessToken ? "presente" : "null");
+    
+    // Iniciar socket se houver token
+    if (accessToken) {
+      this.$socket.connect();
+    }
   },
   mounted() {
     window.addEventListener("resize", () => {
       store.dispatch("screenResize", {
-        wsize: window.innerWidth,
-        hsize: window.innerHeight,
+        width: window.innerWidth,
+        height: window.innerHeight,
       });
     });
   },

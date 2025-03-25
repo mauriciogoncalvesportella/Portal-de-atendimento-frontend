@@ -49,7 +49,7 @@ import CadastroMotivo from "@/views/component/BaseCadastroMotivo";
 import CadastroSituacao from "@/views/component/BaseCadastroSituacao";
 import CadastroUrgencia from "@/views/component/BaseCadastroUrgencia";
 import CadastroTipoAgendamento from "@/views/component/BaseCadastroTipoAgendamento";
-import CadastroEditor from "@/views/component/BaseCadastroEditor";
+import CadastroEditor from "@/views/component/BaseCadastroAtividade";
 
 export default {
   name: "Cadastro",

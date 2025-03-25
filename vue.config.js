@@ -5,7 +5,7 @@ const { resolve } = require("path");
 module.exports = {
   devServer: {
     allowedHosts: ["localhost", "127.0.0.1", ".localhost", "all"],
-    host: "0.0.0.0",
+    host: "localhost", // Alterado de 0.0.0.0 para localhost
     port: 8080,
     https: true,
     headers: {
@@ -24,6 +24,11 @@ module.exports = {
           proxyRes.headers["Access-Control-Allow-Origin"] = "*";
         },
       },
+      "/sockjs-node": {
+        target: "http://localhost:8080",
+        ws: true,
+        changeOrigin: true
+      },
       "/api/socketio": {
         target: "http://localhost:3001",
         changeOrigin: true,
@@ -31,6 +36,8 @@ module.exports = {
         ws: true,
       },
     },
+    public: "localhost:8080", // Adicionado para resolver o problema de CORS do WebSocket
+    disableHostCheck: true // Permite conexões de qualquer host
   },
   lintOnSave: false,
   pwa: {
