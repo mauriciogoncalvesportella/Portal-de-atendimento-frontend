@@ -6,7 +6,7 @@
           class="px-3 py-2 d-flex justify-space-between align-center primary white--text text-h5"
         >
           <span>
-            Urgências
+            Cadastros de atividades
           </span>
           <div>
             <v-tooltip
