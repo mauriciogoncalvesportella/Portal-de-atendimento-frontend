@@ -32,8 +32,8 @@
           class="ma-0 pa-0"
         >
           <template
-            v-for="evento in eventos"
           >
+          <div v-for="evento in eventos">
             <div
               :key="`v-list-item-${evento.cd}`"
             >
@@ -98,6 +98,7 @@
                 </v-list-item-content>
               </v-list-item>
             </div>
+          </div>
           </template>
         </v-list>
         <span
