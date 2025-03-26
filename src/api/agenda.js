@@ -138,10 +138,11 @@ export default {
           );
         }
 
-        throw error;
+        return[];
       } finally {
         commit("SET_LOADING", false);
       }
+      
     },
 
     async updateEvento({ commit, dispatch }, data) {
@@ -205,6 +206,11 @@ export default {
     },
   },
   getters: {
+    ownTodayEventsTotal: (state) => {
+      // Verificação para evitar erro quando state.ownTodayEvents é undefined
+      if (!state.ownTodayEvents) return 0;
+      return state.ownTodayEvents.length;
+    },
     eventos: (state) => state.eventos,
     tiposAgendamento: (state) => state.tiposAgendamento,
     isLoading: (state) => state.loading,

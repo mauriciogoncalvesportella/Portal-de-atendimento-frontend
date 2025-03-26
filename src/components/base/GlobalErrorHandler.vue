@@ -24,17 +24,21 @@ import { mapState } from 'vuex';
 
 export default {
   name: 'GlobalErrorHandler',
+  
   data() {
     return {
       showError: false,
     };
   },
+  
   computed: {
     ...mapState({
-      errorMessage: state => state.Error.message,
-      errorType: state => state.Error.type || 'error'
+      // Alterado para usar o namespace em minúsculo
+      errorMessage: state => state.error ? state.error.message : null,
+      errorType: state => state.error ? (state.error.type || 'error') : 'error'
     })
   },
+  
   watch: {
     errorMessage(newVal) {
       if (newVal) {
@@ -42,10 +46,12 @@ export default {
       }
     }
   },
+  
   methods: {
     closeError() {
       this.showError = false;
-      this.$store.dispatch('Error/clearError');
+      // Alterado para usar o namespace em minúsculo
+      this.$store.dispatch('error/clearError');
     }
   }
 };

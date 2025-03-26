@@ -436,14 +436,30 @@ export default new Vuex.Store({
       await API.Ticket.deleteUrgencia(cd);
     },
 
-    async allTipoAgendamento({ commit, state }, force = false) {
-      let data = state.cache.tipoAgendamento;
-      if (!data || force) {
-        data = await API.Agenda.allTipoAgendamento();
-        commit("SET_TIPOAGENDAMENTO", data);
+    // Altere esta função em seu index.js:
+async allTipoAgendamento({ commit, state, dispatch }, force = false) {
+  try {
+    let data = state.cache.tipoAgendamento;
+    if (!data || force) {
+      // Vamos usar diretamente o módulo Agenda que você já tem implementado
+      // Você já tem Agenda importado em seu store (verificado pelo erro que mostrou)
+      data = await dispatch('Agenda/allTipoAgendamento', null, { root: true });
+      
+      // Se o dispatch acima falhar, use um fallback
+      if (!data) {
+        console.warn('Fallback: Usando array vazio para tiposAgendamento');
+        data = [];
       }
-      return data;
-    },
+      
+      commit("SET_TIPOAGENDAMENTO", data);
+    }
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar tipos de agendamento:', error);
+    // Retorne array vazio em caso de erro para evitar falhas em cascata
+    return [];
+  }
+},
 
     async addTipoAgendamento({ commit }, data) {
       await API.Agenda.addTipoAgendamento(data);

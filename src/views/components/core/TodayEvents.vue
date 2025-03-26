@@ -169,14 +169,36 @@
     },
 
     methods: {
-      async startUp () {
-        const dateToday = this.$moment().format('YYYY-MM-DD')
-        await this.$store.dispatch('allTipoAgendamento')
-        await this.$store.dispatch('Agenda/getOwnTodayEvents')
-        if (this.lastDay !== dateToday && this.rememberOnStart) {
-          this.show()
+      async startUp() {
+        try {
+          const dateToday = this.$moment().format('YYYY-MM-DD');
+          
+          // 1. Inicialize primeiro o state no módulo Agenda
+          await this.$store.dispatch('Agenda/RESET').catch(() => {
+            console.warn('Não foi possível resetar o estado Agenda');
+          });
+          
+          // 2. Tente carregar os tipos de agendamento
+          await this.$store.dispatch('allTipoAgendamento').catch(error => {
+            console.warn('Não foi possível carregar tipos de agendamento:', error);
+          });
+          
+          // 3. Tente carregar os eventos do dia
+          try {
+            await this.$store.dispatch('Agenda/getOwnTodayEvents');
+          } catch (error) {
+            console.warn('Erro ao carregar eventos do dia:', error);
+            // Inicialize o state manualmente se necessário
+            this.$store.commit('Agenda/SET_OWN_TODAY_EVENTS', []);
+          }
+          
+          if (this.lastDay !== dateToday && this.rememberOnStart) {
+            this.show();
+          }
+          localStorage.setItem('TodayEventsLast', dateToday);
+        } catch (error) {
+          console.error('Erro na inicialização de TodayEvents:', error);
         }
-        localStorage.setItem('TodayEventsLast', dateToday)
       },
 
       async show () {
