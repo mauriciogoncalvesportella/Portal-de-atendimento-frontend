@@ -93,8 +93,7 @@ export default new Vuex.Store({
     Tema: TemaStore,
     AtendimentosOnline: AtendimentosOnlineStore,
     SocketStatus: SocketStatusStore,
-    Error: ErrorModule,
-    Agenda: AgendaStore,
+    error: ErrorModule, // CORRIGIDO: mudado de Error para error para corresponder ao namespace usado
   },
   state: initState(),
   mutations: {
@@ -541,7 +540,7 @@ export default new Vuex.Store({
     },
 
     async allChaves(
-      { commit, dispatch },
+      { commit, dispatch, state }, // CORRIGIDO: adicionado state ao destructuring para corrigir o acesso
       args = { force: false, mutex: false }
     ) {
       try {
@@ -564,7 +563,7 @@ export default new Vuex.Store({
         return null;
       } catch (error) {
         // Dispatch para o módulo de erro
-        dispatch("error/handleError", {
+        dispatch("error/handleError", { // CORRIGIDO: agora está correto com o nome do módulo 'error'
           message: "Erro ao buscar chaves",
           type: "error",
           details: error,

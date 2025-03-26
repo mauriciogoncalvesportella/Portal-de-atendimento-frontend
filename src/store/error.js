@@ -1,3 +1,4 @@
+// src/store/error.js
 export default {
   namespaced: true,
   state: {
