@@ -106,7 +106,7 @@ export default {
         {
           id: "editor",
           title: "Atividades",
-          icon: "mdi-file-document-edit",
+          icon: "mdi-table",
           to: "/dashboard/cadastro/editor",
           component: CadastroEditor,
         },
