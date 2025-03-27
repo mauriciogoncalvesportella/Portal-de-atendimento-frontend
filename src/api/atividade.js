@@ -4,7 +4,7 @@ import { CacheManager } from "@/utils/cache-manager";
 import { Logger } from "@/utils/logger";
 
 // Obter o protocolo e a URL do backend do arquivo .env
-const protocol = process.env.VUE_APP_API_PROTOCOL || "https";
+const protocol = process.env.VUE_APP_API_PROTOCOL || "http";
 const backendHost = (process.env.VUE_APP_BACKEND_URL || "localhost:3000")
   .replace("http://", "")
   .replace("https://", "");
