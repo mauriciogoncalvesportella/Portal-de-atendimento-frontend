@@ -62,7 +62,6 @@ export default {
 
     async joinFoneSocket ({ dispatch }) {
       const socket = Vue.prototype.$socketio.socket
-      console.log('[Socket] JoinRoom/Fone')
       socket.emit('JoinRoom', 'Fone')
       socket.removeAllListeners('Fone/add')
       socket.removeAllListeners('Fone/remove')

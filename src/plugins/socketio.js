@@ -20,10 +20,8 @@ export default {
     let lastReconnectTime = 0;
     const RECONNECT_THROTTLE = 60000; // Limita a uma tentativa a cada 60 segundos em modo dev
 
-    // Função para substituir console.log
     const socketLog = (message) => {
       if (SHOW_SOCKET_LOGS) {
-        console.log(message);
       }
     };
 

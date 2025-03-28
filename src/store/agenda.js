@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb'
-import API from '@/api/index'
+import * as AgendaAPI from '@/api/agenda' // Importa as funções diretamente
 import Vue from 'vue'
 import { differenceInMilliseconds } from 'date-fns'
 
@@ -43,7 +43,10 @@ export default {
   }),
   mutations: {
     RESET (state) {
-      Object.assign(state, initState())
+      const newState = initState();
+      // Preserve a referência do PouchDB
+      newState.db = state.db;
+      Object.assign(state, newState);
     },
 
     SET_FLOATMENU (state, payload) {
@@ -64,6 +67,10 @@ export default {
     },
 
     SET_OWNTODAYEVENTS (state, payload) {
+      state.ownTodayEvents = payload
+    },
+
+    SET_OWN_TODAY_EVENTS (state, payload) {
       state.ownTodayEvents = payload
     },
 
@@ -92,38 +99,69 @@ export default {
   },
 
   actions: {
+    // Ação RESET
+    RESET({ commit }) {
+      return new Promise((resolve) => {
+        commit('RESET')
+        resolve()
+      })
+    },
+
+    // Implementação da ação allTipoAgendamento
+    async allTipoAgendamento({ commit }) {
+      try {
+        const response = await AgendaAPI.allTipoAgendamento();
+        return response.data || [];
+      } catch (error) {
+        console.error('Erro ao buscar tipos de agendamento no módulo Agenda:', error);
+        return [];
+      }
+    },
+
     toggleFloatMenu ({ commit, state }) {
       commit('SET_FLOATMENU', !state.floatMenu)
     },
 
+    // Corrigindo o método getOwnTodayEvents para usar a API corretamente
     async getOwnTodayEvents ({ state, commit, dispatch, rootGetters }, force = false) {
       const moment = Vue.prototype.$moment
       const dt = moment().format('YYYY-MM-DD')
       const userTarget = rootGetters.user.cd
+      
       if (force || !state.loaded.getOwnTodayEvents) {
         try {
           commit('SET_LOADING', { key: 'getOwnTodayEvents', value: true })
-          var data = await API.Agenda.allEvento(dt, dt, userTarget)
-        } finally {
+          
+          // Usando a função API importada diretamente
+          const response = await AgendaAPI.allEvento(dt, dt, userTarget);
+          const data = response.data || [];
+          
           commit('SET_OWNTODAYEVENTS', data)
           dispatch('generateNotificationTimeouts', data)
           commit('SET_LOADED', { key: 'getOwnTodayEvents', value: true })
+        } catch (error) {
+          console.error('Erro ao carregar eventos do dia:', error)
+          commit('SET_OWNTODAYEVENTS', [])
+          commit('SET_LOADED', { key: 'getOwnTodayEvents', value: true })
+        } finally {
+          commit('SET_LOADING', { key: 'getOwnTodayEvents', value: false })
         }
-        commit('SET_LOADING', { key: 'getOwnTodayEvents', value: false })
       }
+      return state.ownTodayEvents
     },
 
     generateNotificationTimeouts ({ commit }, events) {
-      if (events.length) {
+      if (events && events.length) {
         commit('REMOVE_NOTIFICATION_TIMEOUTS')
       }
 
-      for (const event of events) {
+      for (const event of events || []) {
+        if (!event.dtinicio) continue;
+        
         const delayMs = differenceInMilliseconds(new Date(event.dtinicio), new Date());
         [0, 3e5, 6e5, 9e5, 18e5].forEach(time => {
           if (delayMs - time > 0) {
             const dataMS = (new Date().getTime()) + delayMs - time
-            console.log(new Date(dataMS), delayMs - time)
             const timeout = setTimeout(() => {
               Vue.prototype.$notification.show(
                 'Notificação Agenda',
@@ -139,6 +177,11 @@ export default {
     },
 
     async initialize ({ state, commit, rootGetters }) {
+      if (!rootGetters.user || !rootGetters.user.cd) {
+        console.warn('User not available for Agenda initialization');
+        return;
+      }
+      
       const userCd = rootGetters.user.cd
       commit('SET', { key: 'docId', value: `${userCd}` })
       const { docId, db } = state
@@ -156,7 +199,7 @@ export default {
             UsersAvaibleCheckbox: [userCd],
           })
         } else {
-          throw err
+          console.error('Erro ao inicializar agenda:', err)
         }
       } finally {
         commit('SET', { key: 'initialized', value: true })
@@ -164,12 +207,21 @@ export default {
     },
 
     async updateDb ({ state }) {
-      const { db, docId, UsersInEvents, UsersAvaible, UsersAvaibleCheckbox } = state
-      const doc = await db.get(docId)
-      doc.UsersAvaible = UsersAvaible
-      doc.UsersInEvents = UsersInEvents
-      doc.UsersAvaibleCheckbox = UsersAvaibleCheckbox
-      await db.put(doc)
+      if (!state.docId) {
+        console.warn('docId not set, cannot update db');
+        return;
+      }
+      
+      try {
+        const { db, docId, UsersInEvents, UsersAvaible, UsersAvaibleCheckbox } = state
+        const doc = await db.get(docId)
+        doc.UsersAvaible = UsersAvaible
+        doc.UsersInEvents = UsersInEvents
+        doc.UsersAvaibleCheckbox = UsersAvaibleCheckbox
+        await db.put(doc)
+      } catch (error) {
+        console.error('Error updating agenda database:', error)
+      }
     },
 
     async remove ({ commit, dispatch }, { key, value }) {

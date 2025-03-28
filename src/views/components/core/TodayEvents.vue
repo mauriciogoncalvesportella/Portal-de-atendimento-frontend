@@ -180,6 +180,7 @@
           });
           
           // 2. Tente carregar os tipos de agendamento
+          // Agora usando a ação do módulo raiz (corrigido)
           await this.$store.dispatch('allTipoAgendamento').catch(error => {
             console.warn('Não foi possível carregar tipos de agendamento:', error);
           });

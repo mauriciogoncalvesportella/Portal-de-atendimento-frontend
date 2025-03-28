@@ -106,31 +106,20 @@ export default {
         const accessToken = localStorage.getItem("access_token");
         const token = localStorage.getItem("token");
 
-        console.log(
-          "[Auth] Token armazenado como 'access_token':",
-          !!accessToken
-        );
-        console.log("[Auth] Token armazenado como 'token':", !!token);
-
         // Decodificar e mostrar conteúdo do token para debug
         if (accessToken) {
           const decoded = this.decodeJWT(accessToken);
-          console.log("[Auth] Token decodificado:", decoded);
-          console.log("[Auth] O token contém 'idlogin'?", !!decoded?.idlogin);
         }
 
         // Sincronizar tokens se necessário
         if (accessToken && !token) {
-          console.log("[Auth] Sincronizando 'token' de 'access_token'");
           localStorage.setItem("token", accessToken);
         }
 
         // Inicializar conexão de socket
-        console.log("[Auth] Inicializando conexão de socket após login");
         if (this.$initSocketConnection) {
           this.$initSocketConnection();
         } else {
-          console.warn("[Auth] Método $initSocketConnection não encontrado");
         }
 
         await this.$router.push({ name: "menu" });

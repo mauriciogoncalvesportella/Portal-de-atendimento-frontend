@@ -44,11 +44,9 @@ export default {
       const socket = Vue.prototype.$socketio.socket
 
       socket.emit('JoinRoom', 'AtendimentosOnline')
-      console.log('[Socket] JoinRoom/AtendimentosOnline')
 
       socket.removeAllListeners('AtendimentosOnline/update')
       socket.on('AtendimentosOnline/update', data => {
-        console.log('[Socket] AtendimentosOnline/update', data.cd)
         dispatch('updateAtendimento', data)
       })
     },

@@ -8,43 +8,29 @@ export default {
   },
   mutations: {
     SET_ATIVIDADES(state, atividades) {
-      console.log(
-        "[Debug Store] SET_ATIVIDADES chamado com",
-        atividades?.length || 0,
-        "itens"
-      );
 
       // Garantir que não há duplicatas no array por ID
       const idsUnicos = {};
       state.atividades = atividades.filter((item) => {
         if (!item || !item.id) {
-          console.log("[Debug Store] Item sem ID ignorado:", item);
           return false;
         }
 
         if (idsUnicos[item.id]) {
-          console.log("[Debug Store] Item duplicado removido:", item.id);
           return false; // Remover duplicata
         } else {
           idsUnicos[item.id] = true;
           return true;
         }
       });
-
-      console.log(
-        "[Debug Store] Após filtrar duplicatas restaram:",
-        state.atividades.length
-      );
     },
     ADD_ATIVIDADE(state, atividade) {
-      console.log("[Debug Store] ADD_ATIVIDADE chamado com:", atividade);
 
       // Verifica se a atividade é válida antes de adicionar
       if (atividade && atividade.id) {
         // Evita adicionar se já existe um item com mesmo ID
         if (!state.atividades.some((a) => a.id === atividade.id)) {
           state.atividades.push(atividade);
-          console.log("[Debug Store] Atividade adicionada com sucesso");
         } else {
           console.warn(
             `[Debug Store] Tentativa de adicionar atividade com ID duplicado: ${atividade.id}`
@@ -58,7 +44,6 @@ export default {
       }
     },
     UPDATE_ATIVIDADE(state, atividade) {
-      console.log("[Debug Store] UPDATE_ATIVIDADE chamado com:", atividade);
 
       if (!atividade || !atividade.id) {
         console.error(
@@ -71,7 +56,6 @@ export default {
       const index = state.atividades.findIndex((a) => a.id === atividade.id);
       if (index !== -1) {
         state.atividades.splice(index, 1, atividade);
-        console.log("[Debug Store] Atividade atualizada com sucesso");
       } else {
         console.warn(
           "[Debug Store] Atividade não encontrada para atualização:",
@@ -80,12 +64,10 @@ export default {
       }
     },
     REMOVE_ATIVIDADE(state, id) {
-      console.log("[Debug Store] REMOVE_ATIVIDADE chamado com ID:", id);
 
       const index = state.atividades.findIndex((a) => a.id === id);
       if (index !== -1) {
         state.atividades.splice(index, 1);
-        console.log("[Debug Store] Atividade removida com sucesso");
       } else {
         console.warn(
           "[Debug Store] Atividade não encontrada para remoção:",
@@ -99,14 +81,9 @@ export default {
   },
   actions: {
     async fetchAtividades({ commit }) {
-      console.log("[Debug Store] fetchAtividades iniciado");
       try {
         commit("SET_LOADING", true);
         const data = await API.Atividade.all();
-        console.log(
-          "[Debug Store] fetchAtividades recebeu dados:",
-          data?.length || 0
-        );
         commit("SET_ATIVIDADES", data);
         return data;
       } catch (error) {
@@ -117,7 +94,6 @@ export default {
       }
     },
     async criarAtividade({ commit, state }, atividade) {
-      console.log("[Debug Store] criarAtividade chamado com:", atividade);
       try {
         commit("SET_LOADING", true);
 
@@ -140,7 +116,6 @@ export default {
         }
 
         const data = await API.Atividade.add(atividade);
-        console.log("[Debug Store] criarAtividade recebeu resposta:", data);
 
         // Verifica se recebeu dados válidos da API
         if (!data || !data.id) {
@@ -161,7 +136,6 @@ export default {
       }
     },
     async atualizarAtividade({ commit, state }, atividade) {
-      console.log("[Debug Store] atualizarAtividade chamado com:", atividade);
       try {
         commit("SET_LOADING", true);
 
@@ -185,7 +159,6 @@ export default {
         }
 
         const data = await API.Atividade.update(atividade);
-        console.log("[Debug Store] atualizarAtividade recebeu resposta:", data);
 
         // Verifica se recebeu dados válidos da API
         if (!data || !data.id) {
@@ -206,14 +179,9 @@ export default {
       }
     },
     async excluirAtividade({ commit }, id) {
-      console.log("[Debug Store] excluirAtividade chamado com ID:", id);
       try {
         commit("SET_LOADING", true);
         const resultado = await API.Atividade.delete(id);
-        console.log(
-          "[Debug Store] excluirAtividade recebeu resposta:",
-          resultado
-        );
 
         if (resultado) {
           commit("REMOVE_ATIVIDADE", id);

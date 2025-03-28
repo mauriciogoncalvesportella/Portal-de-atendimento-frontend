@@ -49,10 +49,8 @@ var VueScrollTo = require("vue-scrollto");
 
 // Sincroniza tokens para compatibilidade
 if (localStorage.getItem("access_token") && !localStorage.getItem("token")) {
-  console.log("[App] Sincronizando tokens para compatibilidade");
   localStorage.setItem("token", localStorage.getItem("access_token"));
 } else if (localStorage.getItem("token") && !localStorage.getItem("access_token")) {
-  console.log("[App] Sincronizando tokens para compatibilidade (inverso)");
   localStorage.setItem("access_token", localStorage.getItem("token"));
 }
 
@@ -71,9 +69,6 @@ Vue.prototype.$socket = {
   connect() {
     // Recupera o token de autenticação
     const token = getAccessToken();
-    
-    // Log para depuração
-    console.log("[Socket] Configurando conexão com token:", !!token);
 
     // Configuração do socket
     this.instance = io(
@@ -84,7 +79,6 @@ Vue.prototype.$socket = {
 
         // Configurações de autenticação
         auth: (cb) => {
-          console.log("[Socket] Enviando token de autenticação:", !!token);
           cb({
             token: token,
             // Opcional: passar informações adicionais
@@ -101,7 +95,6 @@ Vue.prototype.$socket = {
 
     // Listeners de conexão com logs detalhados
     this.instance.on("connect", () => {
-      console.log("[Socket] Conexão estabelecida com sucesso");
     });
 
     this.instance.on("connect_error", (error) => {
@@ -113,7 +106,6 @@ Vue.prototype.$socket = {
     });
 
     this.instance.on("disconnect", (reason) => {
-      console.log(`[Socket] Desconectado. Motivo: ${reason}`);
     });
 
     return this.instance;
@@ -209,8 +201,6 @@ export default new Vue({
   created() {
     // Debug para verificar tokens
     const accessToken = getAccessToken();
-    console.log("Access token:", accessToken ? "presente" : "null");
-    console.log("Socket token:", accessToken ? "presente" : "null");
     
     // Iniciar socket se houver token
     if (accessToken) {

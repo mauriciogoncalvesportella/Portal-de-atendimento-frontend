@@ -14,48 +14,28 @@ export const Client = axios.create({
 // Interceptor de request com logging adicional
 Client.interceptors.request.use(
   (request) => {
-    // Logs adicionais
-    console.log("URL completa:", request.baseURL + request.url);
-    console.log("Método:", request.method);
-    console.log("Headers completos:", JSON.stringify(request.headers));
 
     // Lógica original de headers e token
     request.headers["version-control"] =
       localStorage.getItem("version") ?? "default";
 
-    console.log("Preparando requisição para:", request.url);
-    console.log("Headers", JSON.stringify(request.headers));
-
     if (vue.$store.getters.token) {
-      console.log(
-        "Token disponível:",
-        vue.$store.getters.token ? "Sim" : "Não"
-      );
 
       if (vue.$store.getters.token !== "unauthorized") {
         const timeExp = jwtDecode(vue.$store.getters.token).exp;
         const timeNow = new Date().getTime() / 1000;
 
         if (timeNow > timeExp) {
-          console.log("Token expirado, fazendo logout");
           vue.$store.dispatch("logout", false);
         } else {
-          console.log("Adicionando token ao header");
           request.headers.Authorization = `Bearer ${vue.$store.getters.token}`;
-          console.log(
-            "Header de autenticação adicionado:",
-            request.headers.Authorization
-          );
         }
       }
-    } else {
-      console.log("Token não disponível");
     }
 
     return request;
   },
   (error) => {
-    console.error("Erro no interceptor de request:", error);
     return Promise.reject(error);
   }
 );
@@ -63,8 +43,6 @@ Client.interceptors.request.use(
 // Interceptor de response com logging adicional
 Client.interceptors.response.use(
   function (response) {
-    // Log da resposta completa
-    console.log("Resposta completa:", JSON.stringify(response.data));
 
     // Lógica de versionamento
     const currentVersion = localStorage.getItem("version");

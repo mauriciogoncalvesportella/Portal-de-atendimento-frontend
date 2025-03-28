@@ -2,6 +2,7 @@ import Vue from "vue";
 import Vuex from "vuex";
 import jwtDecode from "jwt-decode";
 import API from "@/api/";
+import * as AgendaAPI from "@/api/agenda"; // Importa as funções da API diretamente
 import AgendaStore from "./agenda.js";
 import NovoTicketStore from "./novo-ticket";
 import FilaEsperaStore from "./fila-espera";
@@ -140,6 +141,9 @@ export default new Vuex.Store({
       state.cache.origem = payload;
     },
     SET_TIPOAGENDAMENTO(state, payload) {
+      state.cache.tipoAgendamento = payload;
+    },
+    SET_TIPO_AGENDAMENTO(state, payload) {
       state.cache.tipoAgendamento = payload;
     },
     SET_SITUACAO(state, payload) {
@@ -336,32 +340,58 @@ export default new Vuex.Store({
       state.commit("SHOW_SNACK", { content, color, position });
     },
 
-    async allEvento({ commit }, { dtinicio, dtfim }) {
-      return await API.Agenda.allEvento(dtinicio, dtfim);
+    async allEvento({ commit }, { dtinicio, dtfim, userTarget }) {
+      try {
+        const response = await AgendaAPI.allEvento(dtinicio, dtfim, userTarget);
+        return response.data;
+      } catch (error) {
+        console.error('Erro ao buscar eventos:', error);
+        return [];
+      }
     },
 
     async addEvento({ dispatch }, item) {
-      await API.Agenda.addEvento(item);
-      await dispatch("Agenda/getOwnTodayEvents");
+      try {
+        await AgendaAPI.addEvento(item);
+        await dispatch("Agenda/getOwnTodayEvents", true);
+      } catch (error) {
+        console.error('Erro ao adicionar evento:', error);
+      }
     },
 
     async duplicarEvento({ dispatch }, data) {
-      await API.Agenda.duplicarEvento(data);
-      await dispatch("Agenda/getOwnTodayEvents");
+      try {
+        await AgendaAPI.duplicarEvento(data);
+        await dispatch("Agenda/getOwnTodayEvents", true);
+      } catch (error) {
+        console.error('Erro ao duplicar evento:', error);
+      }
     },
 
     async deleteEvento({ dispatch }, cd) {
-      await API.Agenda.deleteEvento(cd);
-      await dispatch("Agenda/getOwnTodayEvents");
+      try {
+        await AgendaAPI.deleteEvento(cd);
+        await dispatch("Agenda/getOwnTodayEvents", true);
+      } catch (error) {
+        console.error('Erro ao deletar evento:', error);
+      }
     },
 
     async updateEvento({ dispatch }, item) {
-      await API.Agenda.updateEvento(item);
-      await dispatch("Agenda/getOwnTodayEvents");
+      try {
+        await AgendaAPI.updateEvento(item);
+        await dispatch("Agenda/getOwnTodayEvents", true);
+      } catch (error) {
+        console.error('Erro ao atualizar evento:', error);
+      }
     },
 
     async fixarEvento({ dispatch }, item) {
-      await API.Agenda.fixarEvento(item);
+      try {
+        await AgendaAPI.fixarEvento(item);
+      } catch (error) {
+        console.error('Erro ao fixar evento:', error);
+      }
     },
 
     async addAtendimento({ dispatch }, item) {
@@ -436,41 +466,44 @@ export default new Vuex.Store({
       await API.Ticket.deleteUrgencia(cd);
     },
 
-    // Altere esta função em seu index.js:
-async allTipoAgendamento({ commit, state, dispatch }, force = false) {
-  try {
-    let data = state.cache.tipoAgendamento;
-    if (!data || force) {
-      // Vamos usar diretamente o módulo Agenda que você já tem implementado
-      // Você já tem Agenda importado em seu store (verificado pelo erro que mostrou)
-      data = await dispatch('Agenda/allTipoAgendamento', null, { root: true });
-      
-      // Se o dispatch acima falhar, use um fallback
-      if (!data) {
-        console.warn('Fallback: Usando array vazio para tiposAgendamento');
-        data = [];
+    // Corrigindo a função allTipoAgendamento para usar a API diretamente
+    async allTipoAgendamento({ commit, state }, force = false) {
+      try {
+        let data = state.cache.tipoAgendamento;
+        if (!data || force) {
+          const response = await AgendaAPI.allTipoAgendamento();
+          data = response.data || [];
+          commit("SET_TIPOAGENDAMENTO", data);
+        }
+        return data;
+      } catch (error) {
+        console.error('Erro ao buscar tipos de agendamento:', error);
+        return [];
       }
-      
-      commit("SET_TIPOAGENDAMENTO", data);
-    }
-    return data;
-  } catch (error) {
-    console.error('Erro ao buscar tipos de agendamento:', error);
-    // Retorne array vazio em caso de erro para evitar falhas em cascata
-    return [];
-  }
-},
+    },
 
     async addTipoAgendamento({ commit }, data) {
-      await API.Agenda.addTipoAgendamento(data);
+      try {
+        await AgendaAPI.addTipoAgendamento(data);
+      } catch (error) {
+        console.error('Erro ao adicionar tipo de agendamento:', error);
+      }
     },
 
     async updateTipoAgendamento({ commit }, data) {
-      await API.Agenda.updateTipoAgendamento(data);
+      try {
+        await AgendaAPI.updateTipoAgendamento(data);
+      } catch (error) {
+        console.error('Erro ao atualizar tipo de agendamento:', error);
+      }
     },
 
     async deleteTipoAgendamento({ commit }, cd) {
-      await API.Agenda.deleteTipoAgendamento(cd);
+      try {
+        await AgendaAPI.deleteTipoAgendamento(cd);
+      } catch (error) {
+        console.error('Erro ao deletar tipo de agendamento:', error);
+      }
     },
 
     async allSituacao(
@@ -991,7 +1024,7 @@ async allTipoAgendamento({ commit, state, dispatch }, force = false) {
       }
       const tipoAgendamentoMap = {};
       for (const tipoAgendamento of state.cache.tipoAgendamento) {
-        tipoAgendamentoMap[tipoAgendamento.cd] = tipoAgendamento;
+        tipoAgendamentoMap[tipoAgendamento.cdtipoagendamento || tipoAgendamento.cd] = tipoAgendamento;
       }
       return tipoAgendamentoMap;
     },

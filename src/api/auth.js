@@ -13,12 +13,9 @@ const api = axios.create({
 
 // Função de login usando a instância axios configurada
 const login = async (username, password) => {
-  console.log("Tentando login com:", username);
   try {
     const response = await api.post("/api/auth/login", { username, password });
-
     const res = response.data;
-    console.log("Resposta do login:", res);
 
     if (res?.token) {
       // Salvar tokens
@@ -29,7 +26,6 @@ const login = async (username, password) => {
 
       // Inicializar o socket após login bem-sucedido
       if (Vue.prototype.$initSocketConnection) {
-        console.log("[Auth] Inicializando conexão de socket após login");
         Vue.prototype.$initSocketConnection();
       } else {
         console.warn("[Auth] Método $initSocketConnection não disponível");
@@ -64,7 +60,6 @@ const logout = async () => {
     if (Vue.prototype.$socketio && Vue.prototype.$socketio.clientDisconnect) {
       Vue.prototype.$socketio.clientDisconnect();
     }
-    console.log("[Auth] Logout realizado com sucesso");
   } catch (error) {
     console.error("Erro ao fazer logout:", error);
   }

@@ -609,8 +609,6 @@
               }
 
               if (isIndex && userAtendimentos[cduser]) {
-                // userAtendimentos[cduser].online = true
-                // console.log(userAtendimentos, cduser)
                 userAtendimentos[cduser].online = true
                 this.acoesCurrent[acao.cd] = true
               }

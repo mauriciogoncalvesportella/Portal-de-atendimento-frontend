@@ -19,11 +19,6 @@ export default {
     setInterval(() => {
       const currentStatus = this.$socketio?.socket?.connected || false;
       if (currentStatus !== lastStatus) {
-        console.log(
-          `[SocketMonitor] Status da conexão mudou para: ${
-            currentStatus ? "conectado" : "desconectado"
-          }`
-        );
         lastStatus = currentStatus;
       }
     }, 2000);

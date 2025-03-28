@@ -63,7 +63,6 @@ export default {
 
     async joinFilaEsperaSocket ({ dispatch }) {
       const socket = Vue.prototype.$socketio.socket
-      console.log('[Socket] JoinRoom/FilaEsperaSocket')
       socket.emit('JoinRoom', 'FilaEspera')
 
       socket.removeAllListeners('FilaEspera/add')

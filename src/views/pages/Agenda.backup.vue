@@ -318,8 +318,6 @@
             state.preferToday = false
           }
         } catch (e) {
-          // eslint-disable-next-line
-          console.log( e )
         }
         if (!state.events || !state.events.length) {
           state.events = this.defaultEvents

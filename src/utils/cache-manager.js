@@ -23,7 +23,6 @@ export const CacheManager = {
         this.getKey(resourceName),
         JSON.stringify(cacheItem)
       );
-      console.log(`Cache atualizado para: ${resourceName}`);
       return true;
     } catch (error) {
       console.error(`Erro ao salvar ${resourceName} no cache:`, error);
@@ -37,7 +36,6 @@ export const CacheManager = {
     try {
       const cachedData = localStorage.getItem(this.getKey(resourceName));
       if (!cachedData) {
-        console.log(`Sem cache para: ${resourceName}`);
         return null;
       }
 
@@ -46,11 +44,8 @@ export const CacheManager = {
 
       // Verifica se o cache expirou
       if (now - cacheItem.timestamp > maxAgeMs) {
-        console.log(`Cache de ${resourceName} expirado`);
         return null;
       }
-
-      console.log(`Usando cache para: ${resourceName}`);
       return cacheItem.data;
     } catch (error) {
       console.error(`Erro ao ler ${resourceName} do cache:`, error);
@@ -61,7 +56,6 @@ export const CacheManager = {
   // Remove item do cache
   removeFromCache(resourceName) {
     localStorage.removeItem(this.getKey(resourceName));
-    console.log(`Cache removido: ${resourceName}`);
   },
 
   // Limpa todo o cache da versão atual
@@ -78,6 +72,5 @@ export const CacheManager = {
     }
 
     keysToRemove.forEach((key) => localStorage.removeItem(key));
-    console.log(`Cache limpo: ${keysToRemove.length} itens removidos`);
   },
 };

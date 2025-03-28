@@ -207,8 +207,6 @@
           // this.loading = true
           this.$nextTick(() => {
             this.getWidths()
-            // console.log('teste')
-            // this.loading = false
           })
           if (this.lastTicketOpen.userIndex != null && this.lastTicketOpen.id) {
             setTimeout(() => {

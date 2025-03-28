@@ -5,7 +5,6 @@
 <script>
 export default {
   mounted() {
-    console.log("[Debug] Tentando inicializar conexão socket");
 
     // Verificar se o método retorna uma Promise e trata-la corretamente
     const connectResult = this.$socketio.connect();
