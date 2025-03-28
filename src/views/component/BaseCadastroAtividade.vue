@@ -218,6 +218,7 @@
 
 <script>
 import draggable from 'vuedraggable';
+import { mapState, mapActions } from 'vuex';
 
 export default {
   name: 'BaseCadastroAtividade',
@@ -232,7 +233,6 @@ export default {
     return {
       valid: true,
       items: [],
-      loading: false,
       dialog: false,
       nmatividade: '',
       cd: null,
@@ -256,14 +256,76 @@ export default {
       currentAttachments: []
     };
   },
+  computed: {
+    ...mapState('atividades', ['loading'])
+  },
   created() {
-    this.items = this.initialData.length > 0 ? this.initialData : this.carregarDados();
+    // Carregar atividades do backend via store
+    this.carregarDadosBackend();
     document.addEventListener('click', this.handleDocumentClick);
   },
   beforeDestroy() {
     document.removeEventListener('click', this.handleDocumentClick);
   },
   methods: {
+    ...mapActions('atividades', [
+      'fetchAtividades',
+      'criarAtividade',
+      'atualizarAtividade',
+      'excluirAtividade'
+    ]),
+    
+    // Método para carregar dados do backend
+    async carregarDadosBackend() {
+      try {
+        // Usar dados iniciais ou carregar do backend
+        if (this.initialData && this.initialData.length > 0) {
+          this.items = this.initialData;
+        } else {
+          const data = await this.fetchAtividades();
+          // Mapear dados do backend para o formato esperado pelo componente
+          this.items = this.mapearDadosBackend(data || []);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar atividades:', error);
+        // Fallback para dados padrão ou localStorage
+        const saved = localStorage.getItem('atividades');
+        try {
+          const parsed = JSON.parse(saved);
+          this.items = Array.isArray(parsed) ? parsed : this.dadosIniciais();
+        } catch (e) {
+          this.items = this.dadosIniciais();
+        }
+      }
+    },
+    
+    // Mapear dados do backend para o formato do frontend
+    mapearDadosBackend(atividadesBackend) {
+      return atividadesBackend.map((atividade, index) => ({
+        id: atividade.id,
+        cd: atividade.id,
+        nmatividade: atividade.titulo,
+        descricao: atividade.descricao,
+        icon: this.getIconForStatus(atividade.status),
+        status: atividade.status,
+        responsavel: atividade.responsavel,
+        prioridade: atividade.prioridade,
+        nordem: index
+      }));
+    },
+    
+    // Obter ícone baseado no status (ou usar ícone padrão)
+    getIconForStatus(status) {
+      const statusMap = {
+        'Pendente': 'mdi-clock-outline',
+        'Em Andamento': 'mdi-account-hard-hat',
+        'Concluído': 'mdi-checkbox-blank-circle-outline'
+        // Adicione mais mapeamentos conforme necessário
+      };
+      
+      return statusMap[status] || 'mdi-checkbox-blank-circle-outline';
+    },
+    
     dadosIniciais() {
       return [
         { id: 1, cd: 1, nmatividade: 'Análise Suporte N1', icon: 'mdi-account-hard-hat', nordem: 0 },
@@ -280,34 +342,33 @@ export default {
         { id: 12, cd: 12, nmatividade: 'Finalizado', icon: 'mdi-checkbox-blank-circle-outline', nordem: 11 }
       ];
     },
-    carregarDados() {
-      const saved = localStorage.getItem('atividades');
-      try {
-        const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed : this.dadosIniciais();
-      } catch (e) {
-        return this.dadosIniciais();
-      }
-    },
-    salvarDados() {
+    
+    // Método de salvamento local (fallback)
+    salvarDadosLocal() {
       localStorage.setItem('atividades', JSON.stringify(this.items));
       this.$emit('update', this.items);
     },
+    
     async sortAlpha() {
       if (!Array.isArray(this.items)) return;
       this.items.sort((a, b) => (a.nmatividade || '').localeCompare(b.nmatividade || ''));
       await this.saveOrder();
     },
+    
     async saveOrder() {
       this.items.forEach((item, i) => item.nordem = i);
       try {
-        if (this.$store) await this.$store.dispatch('atividades/updateAtividade', this.items);
-        else this.salvarDados();
+        // Tentar atualizar a ordem no backend
+        // Nota: isso pode exigir um endpoint específico para atualização em lote
+        // Por enquanto, apenas emitimos o evento de alteração
         this.$emit('order-changed', this.items);
+        this.salvarDadosLocal(); // Fallback para local
       } catch (e) {
-        this.salvarDados();
+        console.error('Erro ao salvar ordem:', e);
+        this.salvarDadosLocal();
       }
     },
+    
     resetForm() {
       this.dialog = true;
       this.cd = null;
@@ -317,47 +378,107 @@ export default {
       this.currentAttachments = [];
       if (this.$refs.editorContent) this.$refs.editorContent.innerHTML = '';
     },
-    openEdit(id) {
+    
+    async openEdit(id) {
       const item = this.items.find(i => (i.id || i.cd) === id);
       if (!item) return;
+      
       this.cd = item.id;
       this.nmatividade = item.nmatividade;
       this.selectedIcon = this.availableIcons.find(i => i.icon === item.icon) || this.selectedIcon;
+      
+      if (this.$refs.editorContent && item.descricao) {
+        this.$refs.editorContent.innerHTML = item.descricao;
+        this.updateCharCount();
+      }
+      
       this.dialog = true;
     },
+    
     cancelar() {
       this.dialog = false;
     },
-    salvarAtividade() {
+    
+    async salvarAtividade() {
       if (!this.valid) return;
+      
+      try {
+        // Preparar objeto de atividade para backend
+        const atividadeBackend = {
+          titulo: this.nmatividade,
+          descricao: this.$refs.editorContent?.innerHTML || '',
+          status: 'Pendente', // Status padrão
+          prioridade: 'Média', // Prioridade padrão
+          responsavel: ''
+        };
+        
+        if (this.cd) {
+          // Atualizar atividade existente
+          atividadeBackend.id = this.cd;
+          await this.atualizarAtividade(atividadeBackend);
+        } else {
+          // Criar nova atividade
+          await this.criarAtividade(atividadeBackend);
+        }
+        
+        // Recarregar atividades do backend
+        await this.carregarDadosBackend();
+        this.dialog = false;
+      } catch (error) {
+        console.error('Erro ao salvar atividade:', error);
+        // Fallback para persistência local se falhar
+        this.salvarAtividadeLocal();
+      }
+    },
+    
+    // Método de fallback para salvar localmente
+    salvarAtividadeLocal() {
       const atividade = {
         id: this.cd || Date.now(),
         cd: this.cd || Date.now(),
         nmatividade: this.nmatividade,
+        descricao: this.$refs.editorContent?.innerHTML || '',
         icon: this.selectedIcon.icon,
         nordem: this.items.length
       };
+      
       if (this.cd) {
         const idx = this.items.findIndex(i => (i.id || i.cd) === this.cd);
         if (idx !== -1) this.$set(this.items, idx, atividade);
-      } else this.items.push(atividade);
-      this.salvarDados();
+      } else {
+        this.items.push(atividade);
+      }
+      
+      this.salvarDadosLocal();
       this.dialog = false;
     },
-    deleteItem(id) {
-      this.items = this.items.filter(i => (i.id || i.cd) !== id);
-      this.salvarDados();
+    
+    async deleteItem(id) {
+      try {
+        // Excluir do backend
+        await this.excluirAtividade(id);
+        // Recarregar lista
+        await this.carregarDadosBackend();
+      } catch (error) {
+        console.error('Erro ao excluir atividade:', error);
+        // Fallback para exclusão local
+        this.items = this.items.filter(i => (i.id || i.cd) !== id);
+        this.salvarDadosLocal();
+      }
     },
+    
     execCommand(cmd, val = null) {
       document.execCommand(cmd, false, val);
       this.$refs.editorContent?.focus();
       this.updateCharCount();
     },
+    
     updateCharCount() {
       const content = this.$refs.editorContent?.textContent || '';
       this.charCount = Math.min(content.length, 255);
       if (content.length > 255) this.truncateContent();
     },
+    
     truncateContent() {
       const el = this.$refs.editorContent;
       if (!el) return;
@@ -387,11 +508,13 @@ export default {
       truncateNode(temp, 255);
       el.innerHTML = temp.innerHTML;
     },
+    
     handleDocumentClick(e) {
       if (e.target.type === 'checkbox' && this.$refs.editorContent?.contains(e.target)) {
         e.stopPropagation();
       }
     },
+    
     handleKeyDown(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         const sel = window.getSelection();
@@ -414,12 +537,14 @@ export default {
       }
       this.limitCharCount(e);
     },
+    
     limitCharCount(e) {
       if (this.charCount >= 255) {
         const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Control', 'Meta'];
         if (!allowed.includes(e.key)) e.preventDefault();
       }
     },
+    
     insertCheckbox() {
       const id = `check-${Date.now()}`;
       const el = document.createElement('div');
@@ -452,6 +577,7 @@ export default {
       sel.addRange(newRange);
       label.focus();
     },
+    
     insertCheckboxAfter(refEl) {
       if (!refEl) return;
       const id = `check-${Date.now()}`;
@@ -477,6 +603,7 @@ export default {
       refEl.parentNode.insertBefore(el, refEl.nextSibling);
       label.focus();
     },
+    
     insertTable() {
       const rows = parseInt(prompt('Número de linhas:', '3')) || 3;
       const cols = parseInt(prompt('Número de colunas:', '3')) || 3;
@@ -486,10 +613,12 @@ export default {
       html += '</table>';
       this.execCommand('insertHTML', html);
     },
+    
     insertLink() {
       const url = prompt('Informe a URL do link:', 'http://');
       if (url) this.execCommand('createLink', url);
     },
+    
     handleImageUpload(e) {
       const file = e.target.files[0];
       if (!file || !file.type.startsWith('image/')) return;
@@ -509,6 +638,7 @@ export default {
       reader.readAsDataURL(file);
       this.$refs.imageInput.value = '';
     },
+    
     handleFileUpload(e) {
       const files = Array.from(e.target.files);
       files.forEach(file => {
@@ -517,6 +647,7 @@ export default {
         this.currentAttachments.push({ name: file.name, file, size: file.size, type: file.type });
       });
     },
+    
     removeAttachment(index) {
       this.currentAttachments.splice(index, 1);
     }
