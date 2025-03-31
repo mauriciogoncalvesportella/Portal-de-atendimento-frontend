@@ -5,6 +5,7 @@ import Vue from "vue";
 import App from "./App.vue";
 import router from "./router/";
 import store from "./store/index.js";
+import '../src/utils/src/utils/ckeditor-patch.js'; // Importar o patch do CKEditor
 
 // Importar setupLogger
 import { setupLogger } from "./utils/logger";

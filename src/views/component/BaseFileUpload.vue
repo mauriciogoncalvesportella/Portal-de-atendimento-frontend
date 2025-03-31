@@ -17,17 +17,6 @@
       <v-icon>mdi-paperclip</v-icon>
       Anexar
     </v-btn>
-    <v-btn
-      id="teste"
-      tile
-      depressed
-      :height="btnHeight"
-      :disabled="disabled"
-      @click="openTaskList"
-    >
-      <v-icon class="ListButton">mdi-format-list-checks</v-icon>
-      Listar
-    </v-btn>
     <div
       style="width: 100%"
     >

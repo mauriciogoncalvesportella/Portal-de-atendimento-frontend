@@ -319,7 +319,7 @@
   import MotivoSelector from '@/views/component/BaseMotivoSelector.vue'
   import FileUpload from '@/views/component/BaseFileUpload.vue'
   import BluePrintInput from '@/views/component/BluePrintInput.vue'
-  import Ck from '@/views/component/Ck.vue'
+  import Ck from '@/views/component/SimpleEditor.vue'
   import DatePicker from '@/views/component/BaseDatePicker'
   import { mapGetters, mapState } from 'vuex'
   import { cloneDeep } from 'lodash'

@@ -14,26 +14,24 @@
     </div>
   </div>
 </template>
-<!--script src="https://cdn.ckeditor.com/ckeditor5/20.0.0/classic/translations/pt.js"></script-->
+
 <script>
+// Importando apenas os componentes básicos e essenciais
 import ClassicEditor from "@ckeditor/ckeditor5-editor-classic/src/classiceditor";
 import EssentialsPlugin from "@ckeditor/ckeditor5-essentials/src/essentials";
 import BoldPlugin from "@ckeditor/ckeditor5-basic-styles/src/bold";
 import ItalicPlugin from "@ckeditor/ckeditor5-basic-styles/src/italic";
 import LinkPlugin from "@ckeditor/ckeditor5-link/src/link";
 import ParagraphPlugin from "@ckeditor/ckeditor5-paragraph/src/paragraph";
-import Image from "@ckeditor/ckeditor5-image/src/image";
-import ImageToolbar from "@ckeditor/ckeditor5-image/src/imagetoolbar";
-import ImageStyle from "@ckeditor/ckeditor5-image/src/imagestyle";
-import ImageResize from "@ckeditor/ckeditor5-image/src/imageresize";
-import ImageUpload from "@ckeditor/ckeditor5-image/src/imageupload";
-import LinkImage from "@ckeditor/ckeditor5-link/src/linkimage";
-import Alignment from "@ckeditor/ckeditor5-alignment/src/alignment";
 import Base64UploadAdapter from "@ckeditor/ckeditor5-upload/src/adapters/base64uploadadapter";
-import TodoList from "@ckeditor/ckeditor5-list/src/todolist";
-import ListUI from "@ckeditor/ckeditor5-list/src/listui";
 import SimpleUploadAdapter from "@ckeditor/ckeditor5-upload/src/adapters/simpleuploadadapter";
+import Alignment from "@ckeditor/ckeditor5-alignment/src/alignment";
+import TodoList from "@ckeditor/ckeditor5-list/src/todolist";
+import ListPlugin from "@ckeditor/ckeditor5-list/src/list";
 import vue from "@/main";
+
+// Removemos todas as referências a imports problemáticos
+// Não importar Image, ImageToolbar, ImageStyle, ImageResize, ImageUpload, LinkImage
 
 export default {
   props: {
@@ -77,6 +75,7 @@ export default {
         ready: false,
         height: "300px",
         placeholder: "Descreva em detalhes...",
+        // Reduzindo os plugins para incluir apenas os essenciais
         plugins: [
           Base64UploadAdapter,
           SimpleUploadAdapter,
@@ -85,15 +84,10 @@ export default {
           ItalicPlugin,
           LinkPlugin,
           ParagraphPlugin,
-          Image,
-          ImageResize,
-          ImageToolbar,
-          ImageStyle,
-          ImageUpload,
-          LinkImage,
           Alignment,
           TodoList,
-          ListUI,
+          ListPlugin
+          // Removemos todos os plugins relacionados a imagem
         ],
         font_style: {
           styles: {
@@ -103,6 +97,7 @@ export default {
         alignment: {
           options: ["left", "center", "right"],
         },
+        // Remover quaisquer referências a ferramentas de imagem da barra de ferramentas
         toolbar: [
           "bold",
           "italic",
@@ -113,37 +108,10 @@ export default {
           "bulletedList",
           "todolist",
           "|",
-          "imageUpload",
-          "imageStyle:full",
-          "imageStyle:side",
-          "|",
           "undo",
           "redo",
         ],
-        // Configuração específica para imagens (resolverá o aviso)
-        image: {
-          toolbar: [
-            "imageStyle:full",
-            "imageStyle:side",
-            "|",
-            "imageTextAlternative",
-            "linkImage",
-          ],
-        },
-        simpleUpload: {
-          // The URL that the images are uploaded to.
-          uploadUrl: this.imgUploadUrl,
-
-          // Enable the XMLHttpRequest.withCredentials property.
-          withCredentials: true,
-
-          // Headers sent along with the XMLHttpRequest to the upload server.
-          headers: {
-            "X-CSRF-TOKEN": "CSRF-Token",
-            Authorization: `Bearer ${vue.$store.getters.token}`,
-            ...this.extraHeaders,
-          },
-        },
+        // Remover completamente a configuração de imagem
       },
       language: "pt",
     };
