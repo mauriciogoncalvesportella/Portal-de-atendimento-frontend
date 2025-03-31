@@ -1,33 +1,27 @@
 import axios from "axios";
-
 // Configuração base do Axios
-export const Client = axios.create({
-  baseURL: process.env.VUE_APP_BACKEND_URL || "http://localhost:3000/api",
+const Client = axios.create({
+  baseURL: (process.env.VUE_APP_BACKEND_URL || "http://localhost:3000"),
   timeout: 10000, // 10 segundos de timeout
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
 });
-
 // Interceptor de requisição para adicionar token
 Client.interceptors.request.use(
   (config) => {
     const token =
       localStorage.getItem("token") || localStorage.getItem("access_token");
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     // Adiciona o cabeçalho de controle de versão
-    config.headers["version-control"] = "default";
-
+    config.headers["version-control"] = process.env.VUE_APP_VERSION || "default";
     return config;
   },
   (error) => Promise.reject(error)
 );
-
 // Interceptor de resposta para tratamento de erros
 Client.interceptors.response.use(
   (response) => response,
@@ -39,7 +33,6 @@ Client.interceptors.response.use(
       data: error.response?.data,
       headers: error.response?.headers,
     });
-
     // Tratamento de erros específicos
     if (error.response) {
       switch (error.response.status) {
@@ -66,11 +59,9 @@ Client.interceptors.response.use(
       // Erro na configuração da requisição
       console.error("Erro na configuração da requisição");
     }
-
     return Promise.reject(error);
   }
 );
-
 // Cliente de requisições
 const client = {
   get: (url, config = {}) => Client.get(url, config),
@@ -80,4 +71,5 @@ const client = {
   patch: (url, data, config = {}) => Client.patch(url, data, config),
 };
 
+// Exportação simplificada - apenas o client
 export default client;

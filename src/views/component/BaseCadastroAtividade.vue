@@ -50,30 +50,6 @@
                       counter="100"
                     />
 
-                    <div class="mb-4">
-                      <label class="grey--text text--darken-1 font-weight-medium mb-2 d-block">
-                        Ícone
-                      </label>
-                      <v-select
-                        v-model="selectedIcon"
-                        :items="availableIcons"
-                        item-text="name"
-                        item-value="icon"
-                        filled
-                        return-object
-                        class="mb-2"
-                      >
-                        <template v-slot:selection="{ item }">
-                          <v-icon class="mr-2">{{ item.icon }}</v-icon>
-                          {{ item.name }}
-                        </template>
-                        <template v-slot:item="{ item }">
-                          <v-icon class="mr-2">{{ item.icon }}</v-icon>
-                          {{ item.name }}
-                        </template>
-                      </v-select>
-                    </div>
-
                     <v-divider class="my-4"></v-divider>
 
                     <div class="mb-4">
@@ -197,9 +173,6 @@
           <tr v-for="(item, i) in items" :key="`item-${item.id || item.cd}`" style="cursor: grab">
             <td>{{ i + 1 }}</td>
             <td>{{ item.nmatividade }}</td>
-            <td class="text-center">
-              <v-icon>{{ item.icon || item.idicon }}</v-icon>
-            </td>
             <td class="text-right">
               <v-btn icon @click="openEdit(item.id || item.cd)">
                 <v-icon color="primary">mdi-table-edit</v-icon>
@@ -241,18 +214,6 @@ export default {
         required: value => !!value || 'Campo obrigatório',
         maxLength: value => (value && value.length <= 100) || 'Máximo 100 caracteres'
       },
-      selectedIcon: { icon: 'mdi-checkbox-blank-circle-outline', name: 'Padrão' },
-      availableIcons: [
-        { icon: 'mdi-checkbox-blank-circle-outline', name: 'Padrão' },
-        { icon: 'mdi-account-hard-hat', name: 'Análise/Suporte' },
-        { icon: 'mdi-clock-outline', name: 'Aguardando' },
-        { icon: 'mdi-alert-circle-outline', name: 'Alerta' },
-        { icon: 'mdi-calendar', name: 'Agendamento' },
-        { icon: 'mdi-tablet', name: 'Dispositivo' },
-        { icon: 'mdi-clipboard-check', name: 'Teste' },
-        { icon: 'mdi-monitor', name: 'Atualização' },
-        { icon: 'mdi-cog', name: 'Configuração' }
-      ],
       currentAttachments: []
     };
   },
@@ -301,45 +262,34 @@ export default {
     
     // Mapear dados do backend para o formato do frontend
     mapearDadosBackend(atividadesBackend) {
-      return atividadesBackend.map((atividade, index) => ({
-        id: atividade.id,
-        cd: atividade.id,
-        nmatividade: atividade.titulo,
-        descricao: atividade.descricao,
-        icon: this.getIconForStatus(atividade.status),
-        status: atividade.status,
-        responsavel: atividade.responsavel,
-        prioridade: atividade.prioridade,
-        nordem: index
-      }));
-    },
-    
-    // Obter ícone baseado no status (ou usar ícone padrão)
-    getIconForStatus(status) {
-      const statusMap = {
-        'Pendente': 'mdi-clock-outline',
-        'Em Andamento': 'mdi-account-hard-hat',
-        'Concluído': 'mdi-checkbox-blank-circle-outline'
-        // Adicione mais mapeamentos conforme necessário
-      };
-      
-      return statusMap[status] || 'mdi-checkbox-blank-circle-outline';
+      return atividadesBackend.map((atividade, index) => {
+        return {
+          id: atividade.id,
+          cd: atividade.id,
+          nmatividade: atividade.titulo,
+          descricao: atividade.descricao,
+          status: atividade.status,
+          responsavel: atividade.responsavel,
+          prioridade: atividade.prioridade,
+          nordem: index
+        };
+      });
     },
     
     dadosIniciais() {
       return [
-        { id: 1, cd: 1, nmatividade: 'Análise Suporte N1', icon: 'mdi-account-hard-hat', nordem: 0 },
-        { id: 2, cd: 2, nmatividade: 'Aguardando Ret. Interno', icon: 'mdi-clock-outline', nordem: 1 },
-        { id: 3, cd: 3, nmatividade: 'Aguardando Ret. Cliente', icon: 'mdi-clock-outline', nordem: 2 },
-        { id: 4, cd: 4, nmatividade: 'Análise N2', icon: 'mdi-account-hard-hat', nordem: 3 },
-        { id: 5, cd: 5, nmatividade: 'Correções - Programação', icon: 'mdi-alert-circle-outline', nordem: 4 },
-        { id: 6, cd: 6, nmatividade: 'Melhorias - Programação', icon: 'mdi-calendar', nordem: 5 },
-        { id: 7, cd: 7, nmatividade: 'Aguardando Gilson', icon: 'mdi-clock-outline', nordem: 6 },
-        { id: 8, cd: 8, nmatividade: 'Tablet - Programação', icon: 'mdi-tablet', nordem: 7 },
-        { id: 9, cd: 9, nmatividade: 'Teste', icon: 'mdi-clipboard-check', nordem: 8 },
-        { id: 10, cd: 10, nmatividade: 'Atualizar Cliente', icon: 'mdi-monitor', nordem: 9 },
-        { id: 11, cd: 11, nmatividade: 'Consulta Interna', icon: 'mdi-account-hard-hat', nordem: 10 },
-        { id: 12, cd: 12, nmatividade: 'Finalizado', icon: 'mdi-checkbox-blank-circle-outline', nordem: 11 }
+        { id: 1, cd: 1, nmatividade: 'Análise Suporte N1', nordem: 0 },
+        { id: 2, cd: 2, nmatividade: 'Aguardando Ret. Interno', nordem: 1 },
+        { id: 3, cd: 3, nmatividade: 'Aguardando Ret. Cliente', nordem: 2 },
+        { id: 4, cd: 4, nmatividade: 'Análise N2', nordem: 3 },
+        { id: 5, cd: 5, nmatividade: 'Correções - Programação', nordem: 4 },
+        { id: 6, cd: 6, nmatividade: 'Melhorias - Programação', nordem: 5 },
+        { id: 7, cd: 7, nmatividade: 'Aguardando Gilson', nordem: 6 },
+        { id: 8, cd: 8, nmatividade: 'Tablet - Programação', nordem: 7 },
+        { id: 9, cd: 9, nmatividade: 'Teste', nordem: 8 },
+        { id: 10, cd: 10, nmatividade: 'Atualizar Cliente', nordem: 9 },
+        { id: 11, cd: 11, nmatividade: 'Consulta Interna', nordem: 10 },
+        { id: 12, cd: 12, nmatividade: 'Finalizado', nordem: 11 }
       ];
     },
     
@@ -373,7 +323,6 @@ export default {
       this.dialog = true;
       this.cd = null;
       this.nmatividade = '';
-      this.selectedIcon = this.availableIcons[0];
       this.charCount = 0;
       this.currentAttachments = [];
       if (this.$refs.editorContent) this.$refs.editorContent.innerHTML = '';
@@ -383,9 +332,8 @@ export default {
       const item = this.items.find(i => (i.id || i.cd) === id);
       if (!item) return;
       
-      this.cd = item.id;
+      this.cd = item.id || item.cd;
       this.nmatividade = item.nmatividade;
-      this.selectedIcon = this.availableIcons.find(i => i.icon === item.icon) || this.selectedIcon;
       
       if (this.$refs.editorContent && item.descricao) {
         this.$refs.editorContent.innerHTML = item.descricao;
@@ -438,7 +386,6 @@ export default {
         cd: this.cd || Date.now(),
         nmatividade: this.nmatividade,
         descricao: this.$refs.editorContent?.innerHTML || '',
-        icon: this.selectedIcon.icon,
         nordem: this.items.length
       };
       

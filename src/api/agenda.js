@@ -1,3 +1,4 @@
+// Importação direta do axios para caso houver problemas com o client
 import axios from 'axios';
 
 // Mock data para desenvolvimento
@@ -19,26 +20,58 @@ const mockEventos = [
   }
 ];
 
+// Função auxiliar para criar headers consistentes
+const getHeaders = () => {
+  const token = localStorage.getItem("token") || localStorage.getItem("access_token") || '';
+  return {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : '',
+    'version-control': process.env.VUE_APP_VERSION || 'default'
+  };
+};
+
+// Função auxiliar para fazer requisições GET
+const apiGet = async (url) => {
+  const baseURL = process.env.VUE_APP_BACKEND_URL || "http://localhost:3000";
+  const fullUrl = `${baseURL}${url}`;
+  return await axios.get(fullUrl, { headers: getHeaders() });
+};
+
+// Função auxiliar para fazer requisições POST
+const apiPost = async (url, data) => {
+  const baseURL = process.env.VUE_APP_BACKEND_URL || "http://localhost:3000";
+  const fullUrl = `${baseURL}${url}`;
+  return await axios.post(fullUrl, data, { headers: getHeaders() });
+};
+
+// Função auxiliar para fazer requisições PUT
+const apiPut = async (url, data) => {
+  const baseURL = process.env.VUE_APP_BACKEND_URL || "http://localhost:3000";
+  const fullUrl = `${baseURL}${url}`;
+  return await axios.put(fullUrl, data, { headers: getHeaders() });
+};
+
+// Função auxiliar para fazer requisições DELETE
+const apiDelete = async (url) => {
+  const baseURL = process.env.VUE_APP_BACKEND_URL || "http://localhost:3000";
+  const fullUrl = `${baseURL}${url}`;
+  return await axios.delete(fullUrl, { headers: getHeaders() });
+};
+
 // Funções para API da Agenda com melhor tratamento de erros
 export async function allTipoAgendamento() {
   try {
-    // Inclui cabeçalhos de autenticação
-    const headers = {
-      'Accept': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0' // Adicione a versão do cliente se necessário
-    };
-
     // Tenta a URL original primeiro
     try {
-      const response = await axios.get('/agenda/tipo-agendamento/all', { headers });
+      const response = await apiGet('/api/agenda/tipo-agendamento/all');
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         // Se a primeira URL falhar com 404 ou 426, tenta uma URL alternativa
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para tipos de agendamento');
         try {
-          const response = await axios.get('/api/agenda/tipos', { headers });
+          const response = await apiGet('/api/agenda/tipos');
           return response;
         } catch (secondError) {
           // Se ambas as URLs falharem, retorna mock data
@@ -57,20 +90,14 @@ export async function allTipoAgendamento() {
 
 export async function allEvento(dtinicio, dtfim, userTarget = null) {
   try {
-    // Inclui cabeçalhos de autenticação
-    const headers = {
-      'Accept': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0' // Adicione a versão do cliente se necessário
-    };
-
     // Tenta a URL original primeiro
     try {
-      let url = `/agenda/eventos?dtinicio=${dtinicio}&dtfim=${dtfim}`;
+      // Correção: Usa o formato correto do endpoint conforme definido no backend
+      let url = `/api/agenda/evento/all/${dtinicio}/${dtfim}`;
       if (userTarget) {
-        url += `&userTarget=${userTarget}`;
+        url += `?userTarget=${userTarget}`;
       }
-      const response = await axios.get(url, { headers });
+      const response = await apiGet(url);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
@@ -81,7 +108,7 @@ export async function allEvento(dtinicio, dtfim, userTarget = null) {
           if (userTarget) {
             url += `/${userTarget}`;
           }
-          const response = await axios.get(url, { headers });
+          const response = await apiGet(url);
           return response;
         } catch (secondError) {
           // Se ambas as URLs falharem, retorna mock data
@@ -100,21 +127,14 @@ export async function allEvento(dtinicio, dtfim, userTarget = null) {
 
 export async function addEvento(evento) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.post('/agenda/eventos', evento, { headers });
+      const response = await apiPost('/api/agenda/evento/add', evento);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para adicionar evento');
         try {
-          const response = await axios.post('/api/agenda/eventos', evento, { headers });
+          const response = await apiPost('/api/agenda/eventos', evento);
           return response;
         } catch (secondError) {
           // Simula adição bem-sucedida para desenvolvimento
@@ -135,21 +155,14 @@ export async function addEvento(evento) {
 
 export async function updateEvento(evento) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.put(`/agenda/eventos/${evento.cd}`, evento, { headers });
+      const response = await apiPost('/api/agenda/evento/update', evento);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para atualizar evento');
         try {
-          const response = await axios.put(`/api/agenda/eventos/${evento.cd}`, evento, { headers });
+          const response = await apiPut(`/api/agenda/eventos/${evento.cd}`, evento);
           return response;
         } catch (secondError) {
           // Simula atualização bem-sucedida para desenvolvimento
@@ -167,20 +180,14 @@ export async function updateEvento(evento) {
 
 export async function deleteEvento(cd) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.delete(`/agenda/eventos/${cd}`, { headers });
+      const response = await apiGet(`/api/agenda/evento/delete/${cd}`);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para deletar evento');
         try {
-          const response = await axios.delete(`/api/agenda/eventos/${cd}`, { headers });
+          const response = await apiDelete(`/api/agenda/eventos/${cd}`);
           return response;
         } catch (secondError) {
           // Simula deleção bem-sucedida para desenvolvimento
@@ -198,21 +205,14 @@ export async function deleteEvento(cd) {
 
 export async function fixarEvento(evento) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.post('/agenda/eventos/fixar', evento, { headers });
+      const response = await apiPost('/api/agenda/evento/fixar', evento);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para fixar evento');
         try {
-          const response = await axios.post('/api/agenda/eventos/fixar', evento, { headers });
+          const response = await apiPost('/api/agenda/eventos/fixar', evento);
           return response;
         } catch (secondError) {
           // Simula operação bem-sucedida para desenvolvimento
@@ -230,21 +230,14 @@ export async function fixarEvento(evento) {
 
 export async function duplicarEvento(data) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.post('/agenda/eventos/duplicar', data, { headers });
+      const response = await apiPost('/api/agenda/evento/duplicar', data);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para duplicar evento');
         try {
-          const response = await axios.post('/api/agenda/eventos/duplicar', data, { headers });
+          const response = await apiPost('/api/agenda/eventos/duplicar', data);
           return response;
         } catch (secondError) {
           // Simula duplicação bem-sucedida para desenvolvimento
@@ -267,21 +260,14 @@ export async function duplicarEvento(data) {
 
 export async function addTipoAgendamento(tipoAgendamento) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.post('/agenda/tipo-agendamento', tipoAgendamento, { headers });
+      const response = await apiPost('/api/agenda/tipo-agendamento/add', tipoAgendamento);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para adicionar tipo de agendamento');
         try {
-          const response = await axios.post('/api/agenda/tipos', tipoAgendamento, { headers });
+          const response = await apiPost('/api/agenda/tipos', tipoAgendamento);
           return response;
         } catch (secondError) {
           // Simula adição bem-sucedida para desenvolvimento
@@ -304,21 +290,14 @@ export async function addTipoAgendamento(tipoAgendamento) {
 
 export async function updateTipoAgendamento(tipoAgendamento) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.put(`/agenda/tipo-agendamento/${tipoAgendamento.cd}`, tipoAgendamento, { headers });
+      const response = await apiPost('/api/agenda/tipo-agendamento/update', tipoAgendamento);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para atualizar tipo de agendamento');
         try {
-          const response = await axios.put(`/api/agenda/tipos/${tipoAgendamento.cd}`, tipoAgendamento, { headers });
+          const response = await apiPut(`/api/agenda/tipos/${tipoAgendamento.cd}`, tipoAgendamento);
           return response;
         } catch (secondError) {
           // Simula atualização bem-sucedida para desenvolvimento
@@ -336,20 +315,14 @@ export async function updateTipoAgendamento(tipoAgendamento) {
 
 export async function deleteTipoAgendamento(cd) {
   try {
-    const headers = {
-      'Accept': 'application/json',
-      'Authorization': localStorage.getItem('access_token') || '',
-      'X-Client-Version': '1.0.0'
-    };
-
     try {
-      const response = await axios.delete(`/agenda/tipo-agendamento/${cd}`, { headers });
+      const response = await apiPost(`/api/agenda/tipo-agendamento/delete/${cd}`);
       return response;
     } catch (error) {
       if (error.response && (error.response.status === 404 || error.response.status === 426)) {
         console.warn('URL não encontrada ou upgrade requerido, tentando URL alternativa para deletar tipo de agendamento');
         try {
-          const response = await axios.delete(`/api/agenda/tipos/${cd}`, { headers });
+          const response = await apiDelete(`/api/agenda/tipos/${cd}`);
           return response;
         } catch (secondError) {
           // Simula deleção bem-sucedida para desenvolvimento

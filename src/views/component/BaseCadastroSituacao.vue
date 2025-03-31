@@ -136,7 +136,8 @@
                 <v-icon
                   color="primary"
                 >
-                  mdi-table-edit
+                <!-- Botão editar GRADE -->
+                  mdi-table-edit 
                 </v-icon>
               </v-btn>
               <v-btn

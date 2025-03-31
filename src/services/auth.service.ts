@@ -1,10 +1,11 @@
 import axios from "axios";
+import client, { Client } from "../../rest-client";
 
 export const authService = {
   async login(username: string, password: string) {
     try {
       // Use APENAS esta URL
-      const response = await axios.post(
+      const response = await Client.post(
         "http://localhost:3000/api/auth/login",
         { username, password },
         {
