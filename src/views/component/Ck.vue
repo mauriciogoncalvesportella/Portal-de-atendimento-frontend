@@ -1,12 +1,10 @@
 <template>
   <div>
     <ckeditor
-      :key="`ck-editor-${key}`"
       :editor="editor"
       :config="editorConfig"
       :disabled="ready ? disabled : false"
-      :value="value"
-      @input="change"
+      v-model="editorData"
       @ready="onReady"
     />
     <div :class="`text-right text-caption ${dataUsage.color}`">
@@ -16,24 +14,14 @@
 </template>
 
 <script>
-// Importando apenas os componentes básicos e essenciais
-import ClassicEditor from "@ckeditor/ckeditor5-editor-classic/src/classiceditor";
-import EssentialsPlugin from "@ckeditor/ckeditor5-essentials/src/essentials";
-import BoldPlugin from "@ckeditor/ckeditor5-basic-styles/src/bold";
-import ItalicPlugin from "@ckeditor/ckeditor5-basic-styles/src/italic";
-import LinkPlugin from "@ckeditor/ckeditor5-link/src/link";
-import ParagraphPlugin from "@ckeditor/ckeditor5-paragraph/src/paragraph";
-import Base64UploadAdapter from "@ckeditor/ckeditor5-upload/src/adapters/base64uploadadapter";
-import SimpleUploadAdapter from "@ckeditor/ckeditor5-upload/src/adapters/simpleuploadadapter";
-import Alignment from "@ckeditor/ckeditor5-alignment/src/alignment";
-import TodoList from "@ckeditor/ckeditor5-list/src/todolist";
-import ListPlugin from "@ckeditor/ckeditor5-list/src/list";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import CKEditor from "@ckeditor/ckeditor5-vue";
 import vue from "@/main";
 
-// Removemos todas as referências a imports problemáticos
-// Não importar Image, ImageToolbar, ImageStyle, ImageResize, ImageUpload, LinkImage
-
 export default {
+  components: {
+    ckeditor: CKEditor.component,
+  },
   props: {
     value: {
       type: String,
@@ -62,68 +50,52 @@ export default {
       default: () => {},
     },
   },
-  data: function () {
+  data() {
     return {
-      key: 0,
-      text: "",
-      changed: false,
-      editor: ClassicEditor,
-      editorData: "",
-      interval: null,
-      ready: false,
+      editor: ClassicEditor, // Inicializa ClassicEditor aqui
       editorConfig: {
-        ready: false,
         height: "300px",
         placeholder: "Descreva em detalhes...",
-        // Reduzindo os plugins para incluir apenas os essenciais
-        plugins: [
-          Base64UploadAdapter,
-          SimpleUploadAdapter,
-          EssentialsPlugin,
-          BoldPlugin,
-          ItalicPlugin,
-          LinkPlugin,
-          ParagraphPlugin,
-          Alignment,
-          TodoList,
-          ListPlugin
-          // Removemos todos os plugins relacionados a imagem
-        ],
-        font_style: {
-          styles: {
-            color: "black",
-          },
-        },
         alignment: {
           options: ["left", "center", "right"],
         },
-        // Remover quaisquer referências a ferramentas de imagem da barra de ferramentas
         toolbar: [
           "bold",
           "italic",
           "link",
           "alignment",
+          "subscript", // Adicionado
+          "superscript", // Adicionado
           "|",
+          "outdent", // Adicionado
+          "indent", // Adicionado
           "numberedList",
           "bulletedList",
           "todolist",
           "|",
+          "insertImage", // Adicionado
+          "insertTable", // Adicionado
+          "|",
           "undo",
           "redo",
         ],
-        // Remover completamente a configuração de imagem
       },
-      language: "pt",
+      editorData: this.value, // Inicializa com o valor do prop
+      ready: false,
+      key: 0,
+      text: "",
+      changed: false,
+      interval: null,
     };
   },
 
   computed: {
-    dataUsage: function () {
-      let color = "";
+    dataUsage() {
+      if (!this.editorData)
+        return { percentValue: 0, percentText: "0%", color: "" };
+
       const percent = (this.editorData.length * 100) / 921600;
-      if (percent > 100) {
-        color = "red--text";
-      }
+      const color = percent > 100 ? "red--text" : "";
 
       return {
         percentValue: percent,
@@ -134,9 +106,7 @@ export default {
   },
 
   created() {
-    if (this.value) {
-      this.editorData = this.value;
-    }
+    // Move a inicialização de editorData para o data()
   },
 
   mounted() {
@@ -163,11 +133,11 @@ export default {
       if (this.ready) {
         this.changed = true;
         this.text = val;
-        this.editorData = val; // Atualiza editorData para o cálculo de uso
+        this.editorData = val;
       }
     },
 
-    onReady() {
+    onReady(editor) {
       this.ready = true;
     },
 
