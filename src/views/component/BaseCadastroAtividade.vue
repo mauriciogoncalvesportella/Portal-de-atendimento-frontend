@@ -50,32 +50,7 @@
                       counter="100"
                     />
 
-                    <!-- Campo para selecionar status da atividade -->
-                    <v-select
-                      v-model="selectedStatus"
-                      :items="statusOptions"
-                      label="Status da Atividade"
-                      filled
-                      class="mb-4"
-                      @change="updateIconBasedOnStatus"
-                    >
-                      <template #selection="{ item }">
-                        <div class="d-flex align-center">
-                          <v-icon left small :color="getStatusColor(item)">
-                            {{ getDefaultIconForStatus(item) }}
-                          </v-icon>
-                          {{ item }}
-                        </div>
-                      </template>
-                      <template #item="{ item }">
-                        <div class="d-flex align-center">
-                          <v-icon left small :color="getStatusColor(item)">
-                            {{ getDefaultIconForStatus(item) }}
-                          </v-icon>
-                          {{ item }}
-                        </div>
-                      </template>
-                    </v-select>
+                    <!-- Campo de status removido conforme solicitado -->
 
                     <v-divider class="my-4"></v-divider>
 
@@ -85,7 +60,7 @@
                       </label>
 
                       <div class="editor-toolbar d-flex flex-wrap align-center mb-2 pa-1 rounded-t">
-                        <v-btn icon small class="mr-1" @click="execCommand('bold')" title="Negrito">
+                       <v-btn icon small class="mr-1" @click="execCommand('bold')" title="Negrito">
                           <span class="font-weight-bold">B</span>
                         </v-btn>
                         <v-btn icon small class="mr-1" @click="execCommand('italic')" title="Itálico">
@@ -145,7 +120,7 @@
 
                       <div class="d-flex justify-end align-center mt-1">
                         <span class="caption grey--text">
-                          {{ charCount }}/255 CARACTERES
+                          {{ charCount }} CARACTERES
                         </span>
                       </div>
 
@@ -153,7 +128,7 @@
                         <input ref="fileInput" type="file" multiple style="display: none" @change="handleFileUpload">
                         <v-btn small outlined color="primary" class="text-none" @click="$refs.fileInput.click()">
                           <v-icon small left>mdi-paperclip</v-icon>
-                          ANEXAR
+                          ANE
                         </v-btn>
 
                         <v-chip-group v-if="currentAttachments.length" column>
@@ -201,18 +176,12 @@
             <td>{{ i + 1 }}</td>
             <td>
               <div class="d-flex align-center">
-                <!-- Mostra o ícone baseado no status da atividade -->
-                <v-icon class="mr-2" :color="getStatusColor(item.status)">
-                  {{ item.icon || getDefaultIconForStatus(item.status) }}
-                </v-icon>
+                <!-- Removido o ícone baseado no status -->
                 {{ item.nmatividade }}
               </div>
             </td>
             <td class="text-right d-flex justify-end align-center">
-              <!-- Status do item -->
-              <v-chip v-if="item.status" small class="mr-2" :color="getStatusColor(item.status)">
-                {{ item.status }}
-              </v-chip>
+              <!-- Removido o chip de status -->
               
               <!-- Ícones de ação -->
               <v-btn icon @click="openEdit(item.id || item.cd)">
@@ -251,28 +220,6 @@ export default {
       nmatividade: '',
       cd: null,
       charCount: 0,
-      selectedStatus: 'Pendente',
-      statusOptions: [
-        'Pendente',
-        'Em andamento',
-        'Concluídos',
-        'Em Treinamento',
-        'Finalizado',
-        'Análise Suporte N1',
-        'Aguardando Ret. Interno',
-        'Aguardando Ret. Cliente',
-        'Análise N2',
-        'Correções - Programação',
-        'Melhorias - Programação',
-        'Aguardando Gilson',
-        'Tablet - Programação',
-        'Teste',
-        'Atualizar Cliente',
-        'Consulta Interna',
-        'A Verificar',
-        'Pendentes',
-        'Via Suporte'
-      ],
       rules: {
         required: value => !!value || 'Campo obrigatório',
         maxLength: value => (value && value.length <= 100) || 'Máximo 100 caracteres'
@@ -298,66 +245,6 @@ export default {
       'atualizarAtividade',
       'excluirAtividade'
     ]),
-    
-    // Método para definir a cor do status
-    getStatusColor(status) {
-      const statusColors = {
-        'Pendente': 'orange',
-        'Em andamento': 'primary',
-        'Concluídos': 'success',
-        'Em Treinamento': 'purple',
-        'Finalizado': 'green',
-        'Análise Suporte N1': 'blue lighten-2',
-        'Aguardando Ret. Interno': 'amber',
-        'Aguardando Ret. Cliente': 'orange lighten-1',
-        'Análise N2': 'blue darken-1',
-        'Correções - Programação': 'red lighten-2',
-        'Melhorias - Programação': 'green lighten-1',
-        'Aguardando Gilson': 'lime darken-1',
-        'Tablet - Programação': 'indigo',
-        'Teste': 'purple lighten-3',
-        'Atualizar Cliente': 'teal',
-        'Consulta Interna': 'cyan darken-1',
-        'A Verificar': 'deep-orange',
-        'Pendentes': 'orange darken-2',
-        'Via Suporte': 'blue'
-      };
-      
-      return statusColors[status] || 'grey';
-    },
-    
-    // Método para atribuir ícone padrão com base no status
-    getDefaultIconForStatus(status) {
-      const statusIcons = {
-        'Pendente': 'mdi-clipboard-clock',
-        'Em andamento': 'mdi-clipboard-play',
-        'Concluídos': 'mdi-clipboard-check',
-        'Em Treinamento': 'mdi-school',
-        'Finalizado': 'mdi-check-circle',
-        'Análise Suporte N1': 'mdi-headset',
-        'Aguardando Ret. Interno': 'mdi-timer-sand',
-        'Aguardando Ret. Cliente': 'mdi-account-clock',
-        'Análise N2': 'mdi-magnify',
-        'Correções - Programação': 'mdi-bug',
-        'Melhorias - Programação': 'mdi-trending-up',
-        'Aguardando Gilson': 'mdi-account-clock',
-        'Tablet - Programação': 'mdi-tablet',
-        'Teste': 'mdi-test-tube',
-        'Atualizar Cliente': 'mdi-update',
-        'Consulta Interna': 'mdi-database-search',
-        'A Verificar': 'mdi-clipboard-alert',
-        'Pendentes': 'mdi-clipboard-text',
-        'Via Suporte': 'mdi-headset'
-      };
-      
-      return statusIcons[status] || 'mdi-clipboard-text';
-    },
-    
-    // Método para atualizar ícone baseado no status selecionado
-    updateIconBasedOnStatus() {
-      // O sistema usa automaticamente o ícone padrão para o status selecionado
-      // Não é necessário armazenar um valor separado para o ícone
-    },
     
     // Método para carregar dados do backend
     async carregarDadosBackend() {
@@ -391,7 +278,6 @@ export default {
           cd: atividade.id,
           nmatividade: atividade.titulo,
           descricao: atividade.descricao,
-          status: atividade.status,
           responsavel: atividade.responsavel,
           prioridade: atividade.prioridade,
           nordem: index
@@ -401,18 +287,18 @@ export default {
     
     dadosIniciais() {
       return [
-        { id: 1, cd: 1, nmatividade: 'Análise Suporte N1', status: 'Análise Suporte N1', nordem: 0 },
-        { id: 2, cd: 2, nmatividade: 'Aguardando Ret. Interno', status: 'Aguardando Ret. Interno', nordem: 1 },
-        { id: 3, cd: 3, nmatividade: 'Aguardando Ret. Cliente', status: 'Aguardando Ret. Cliente', nordem: 2 },
-        { id: 4, cd: 4, nmatividade: 'A Verificar', status: 'A Verificar', nordem: 3 },
-        { id: 5, cd: 5, nmatividade: 'Pendentes', status: 'Pendentes', nordem: 4 },
-        { id: 6, cd: 6, nmatividade: 'Via Suporte', status: 'Via Suporte', nordem: 5 },
-        { id: 7, cd: 7, nmatividade: 'Aguardando Gilson', status: 'Aguardando Gilson', nordem: 6 },
-        { id: 8, cd: 8, nmatividade: 'Tablet - Programação', status: 'Tablet - Programação', nordem: 7 },
-        { id: 9, cd: 9, nmatividade: 'Teste', status: 'Teste', nordem: 8 },
-        { id: 10, cd: 10, nmatividade: 'Atualizar Cliente', status: 'Atualizar Cliente', nordem: 9 },
-        { id: 11, cd: 11, nmatividade: 'Consulta Interna', status: 'Consulta Interna', nordem: 10 },
-        { id: 12, cd: 12, nmatividade: 'Finalizado', status: 'Finalizado', nordem: 11 }
+        { id: 1, cd: 1, nmatividade: 'Análise Suporte N1', nordem: 0 },
+        { id: 2, cd: 2, nmatividade: 'Aguardando Ret. Interno', nordem: 1 },
+        { id: 3, cd: 3, nmatividade: 'Aguardando Ret. Cliente', nordem: 2 },
+        { id: 4, cd: 4, nmatividade: 'A Verificar', nordem: 3 },
+        { id: 5, cd: 5, nmatividade: 'Pendentes', nordem: 4 },
+        { id: 6, cd: 6, nmatividade: 'Via Suporte', nordem: 5 },
+        { id: 7, cd: 7, nmatividade: 'Aguardando Gilson', nordem: 6 },
+        { id: 8, cd: 8, nmatividade: 'Tablet - Programação', nordem: 7 },
+        { id: 9, cd: 9, nmatividade: 'Teste', nordem: 8 },
+        { id: 10, cd: 10, nmatividade: 'Atualizar Cliente', nordem: 9 },
+        { id: 11, cd: 11, nmatividade: 'Consulta Interna', nordem: 10 },
+        { id: 12, cd: 12, nmatividade: 'Finalizado', nordem: 11 }
       ];
     },
     
@@ -446,7 +332,6 @@ export default {
       this.dialog = true;
       this.cd = null;
       this.nmatividade = '';
-      this.selectedStatus = 'Pendente';
       this.charCount = 0;
       this.currentAttachments = [];
       if (this.$refs.editorContent) this.$refs.editorContent.innerHTML = '';
@@ -458,7 +343,6 @@ export default {
       
       this.cd = item.id || item.cd;
       this.nmatividade = item.nmatividade;
-      this.selectedStatus = item.status || 'Pendente';
       
       if (this.$refs.editorContent && item.descricao) {
         this.$refs.editorContent.innerHTML = item.descricao;
@@ -480,7 +364,6 @@ export default {
         const atividadeBackend = {
           titulo: this.nmatividade,
           descricao: this.$refs.editorContent?.innerHTML || '',
-          status: this.selectedStatus,
           prioridade: 'Média', // Prioridade padrão
           responsavel: ''
         };
@@ -511,7 +394,6 @@ export default {
         cd: this.cd || Date.now(),
         nmatividade: this.nmatividade,
         descricao: this.$refs.editorContent?.innerHTML || '',
-        status: this.selectedStatus,
         nordem: this.items.length
       };
       
@@ -548,8 +430,8 @@ export default {
     
     updateCharCount() {
       const content = this.$refs.editorContent?.textContent || '';
-      this.charCount = Math.min(content.length, 255);
-      if (content.length > 255) this.truncateContent();
+      this.charCount = content.length;
+      // if (content.length > 255) this.truncateContent();
     },
     
     truncateContent() {
@@ -612,10 +494,10 @@ export default {
     },
     
     limitCharCount(e) {
-      if (this.charCount >= 255) {
-        const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Control', 'Meta'];
-        if (!allowed.includes(e.key)) e.preventDefault();
-      }
+      // if (this.charCount >= 255) {
+      //   const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Control', 'Meta'];
+      //   if (!allowed.includes(e.key)) e.preventDefault();
+      // }
     },
     
     insertCheckbox() {
@@ -856,18 +738,6 @@ export default {
     margin-top: 8px; /* Espaçamento extra entre checkboxes consecutivos */
   }
   
-  /* Estilos para os ícones de status */
-  .status-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.05);
-    margin-right: 8px;
-  }
-  
   /* Estilo para a tabela principal de atividades */
   .v-simple-table {
     border-radius: 4px;
@@ -880,12 +750,6 @@ export default {
     background-color: rgba(0, 0, 0, 0.02) !important;
   }
   
-  /* Estilo para os chips de status */
-  .v-chip.status-chip {
-    font-size: 12px;
-    height: 24px;
-  }
-  
   /* Estilo para o cabeçalho da tabela */
   .v-data-table thead th {
     font-size: 14px;
@@ -894,17 +758,18 @@ export default {
   }
   
   /* Estilo para o editor de texto */
-  .editor-toolbar {
-    background-color: #f5f5f5;
-    border: 1px solid #e0e0e0;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-  }
-  
-  /* Melhorar estilo para v-tooltip */
-  .v-tooltip__content {
-    font-size: 12px;
-    padding: 4px 8px;
-    background-color: rgba(33, 33, 33, 0.9);
-  }
+  /* Continuação dos estilos CSS */
+.editor-toolbar {
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+/* Melhorar estilo para v-tooltip */
+.v-tooltip__content {
+  font-size: 12px;
+  padding: 4px 8px;
+  background-color: rgba(33, 33, 33, 0.9);
+}
 </style>
